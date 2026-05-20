@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,15 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input, Textarea, Select } from '@/components/ui/input'
-import { DataStore, addGig, devs } from '@/lib/data'
+import { DataStore, addGig } from '@/lib/data'
 import { Gig } from '@/lib/types'
 import {
-  cn,
   formatCurrency,
   getGameIcon,
-  getStatusColor,
   getPayoutLabel,
-  getPlatformLabel,
 } from '@/lib/utils'
 import {
   ArrowLeft,
@@ -28,18 +25,16 @@ import {
   AlertCircle,
   CheckCircle2,
   Gamepad2,
-  DollarSign,
   Users,
-  Clock,
 } from 'lucide-react'
+import { useAuth } from '@/lib/auth'
 
-/* ────────── Constants ────────── */
 const GAME_TYPES = [
-  { value: 'steam', label: '🎮 Steam' },
-  { value: 'fortnite', label: '⚔️ Fortnite' },
-  { value: 'roblox', label: '🧊 Roblox' },
-  { value: 'minecraft', label: '⛏️ Minecraft' },
-  { value: 'other', label: '🎯 Other' },
+  { value: 'steam', label: 'Steam' },
+  { value: 'fortnite', label: 'Fortnite' },
+  { value: 'roblox', label: 'Roblox' },
+  { value: 'minecraft', label: 'Minecraft' },
+  { value: 'other', label: 'Other' },
 ]
 
 const PLATFORMS = [
@@ -61,7 +56,6 @@ const SUGGESTED_TAGS = [
   'review', 'showcase', 'tutorial', 'multiplayer', 'solo',
 ]
 
-/* ────────── Form Data Type ────────── */
 interface FormData {
   title: string
   description: string
@@ -96,16 +90,20 @@ const initialForm: FormData = {
   tags: [],
 }
 
-/* ────────── Post Gig Page ────────── */
 export default function PostGigPage() {
   const router = useRouter()
-  const currentDev = devs[0] // NeonForge
+  const { user: currentDev, isLoading } = useAuth()
   const [form, setForm] = useState<FormData>(initialForm)
   const [errors, setErrors] = useState<FormErrors>({})
   const [tagInput, setTagInput] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-  /* ── Update field ── */
+  useEffect(() => {
+    if (!isLoading && !currentDev) {
+      router.push('/auth')
+    }
+  }, [isLoading, currentDev, router])
+
   const updateField = (field: keyof FormData, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
@@ -117,7 +115,6 @@ export default function PostGigPage() {
     }
   }
 
-  /* ── Tags ── */
   const addTag = (tag: string) => {
     const t = tag.toLowerCase().trim()
     if (t && !form.tags.includes(t) && form.tags.length < 8) {
@@ -130,7 +127,6 @@ export default function PostGigPage() {
     setForm(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }))
   }
 
-  /* ── Validation ── */
   const validate = (): boolean => {
     const errs: FormErrors = {}
     if (!form.title.trim()) errs.title = 'Title is required'
@@ -147,14 +143,14 @@ export default function PostGigPage() {
     return Object.keys(errs).length === 0
   }
 
-  /* ── Submit ── */
   const handleSubmit = () => {
+    if (!currentDev) return
     if (validate()) {
       const newGig = {
         id: `g${Date.now()}`,
-        devId: 'd1',
-        devName: 'NeonForge',
-        devAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=neonforge',
+        devId: currentDev.id,
+        devName: currentDev.name,
+        devAvatar: currentDev.avatar,
         title: form.title.trim(),
         description: form.description.trim(),
         game: form.game.trim(),
@@ -177,17 +173,60 @@ export default function PostGigPage() {
     }
   }
 
-  /* ── Preview Data ── */
   const previewBudget = form.budget ? Number(form.budget) : 0
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+          <p className="text-body text-zinc-500">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentDev) {
+    return (
+      <div className="min-h-screen bg-black">
+        <header className="shadow-divider sticky top-0 z-50 bg-black">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+            <Link href="/" className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-brand" />
+              <span className="text-caption font-bold text-zinc-50">Vibe</span>
+            </Link>
+            <Link href="/auth">
+              <Button variant="ghost" size="sm" className="gap-1">
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        </header>
+        <div className="flex flex-col items-center justify-center py-32 px-6">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full surface-3 mb-6">
+            <Sparkles className="h-10 w-10 text-zinc-600" />
+          </div>
+          <h1 className="text-heading text-zinc-50">Sign in to Post a Gig</h1>
+          <p className="mt-3 text-body text-zinc-500 max-w-md text-center">
+            Create an account or sign in to start posting gigs and find the perfect streamer for your game.
+          </p>
+          <Link href="/auth" className="mt-8">
+            <Button size="lg" className="gap-2">
+              Sign Up / Sign In
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black">
-      {/* ── Header ── */}
-      <header className="border-b border-white/5 bg-black/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="shadow-divider sticky top-0 z-50 bg-black">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#FF4500]" />
-            <span className="text-sm font-bold text-zinc-100">Vibe</span>
+            <Sparkles className="h-5 w-5 text-brand" />
+            <span className="text-caption font-bold text-zinc-50">Vibe</span>
           </Link>
           <Link href="/dev">
             <Button variant="ghost" size="sm" className="gap-1">
@@ -199,14 +238,13 @@ export default function PostGigPage() {
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         {submitted ? (
-          /* ── Success State ── */
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#00FF88]/10 mb-6">
-              <CheckCircle2 className="h-10 w-10 text-[#00FF88]" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-full surface-3 mb-6">
+              <CheckCircle2 className="h-10 w-10 text-green" />
             </div>
-            <h1 className="text-3xl font-bold text-zinc-100">Gig Posted! 🎉</h1>
-            <p className="mt-3 text-zinc-500 max-w-md text-center">
-              Your gig <span className="text-zinc-300 font-semibold">&ldquo;{form.title}&rdquo;</span> is now live.
+            <h1 className="text-display text-zinc-50">Gig Posted!</h1>
+            <p className="mt-3 text-body text-zinc-500 max-w-md text-center">
+              Your gig &ldquo;<span className="text-zinc-300 font-semibold">{form.title}</span>&rdquo; is now live.
               Streamers will start applying soon.
             </p>
             <div className="mt-8 flex gap-4">
@@ -220,19 +258,16 @@ export default function PostGigPage() {
           </div>
         ) : (
           <>
-            {/* ── Page Title ── */}
             <div className="mb-8">
-              <h1 className="text-2xl font-bold text-zinc-100 sm:text-3xl">Post a New Gig</h1>
-              <p className="mt-2 text-sm text-zinc-500">
+              <h1 className="text-display text-zinc-50">Post a New Gig</h1>
+              <p className="mt-2 text-body text-zinc-500">
                 Describe your game, set your budget, and find the perfect streamer.
               </p>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-5">
-              {/* ── Form ── */}
               <div className="space-y-6 lg:col-span-3">
-                {/* Basic Info */}
-                <Card glass>
+                <Card>
                   <CardHeader>
                     <CardTitle>Basic Info</CardTitle>
                     <CardDescription>Tell streamers what your gig is about.</CardDescription>
@@ -266,8 +301,7 @@ export default function PostGigPage() {
                   </CardContent>
                 </Card>
 
-                {/* Game & Platform */}
-                <Card glass>
+                <Card>
                   <CardHeader>
                     <CardTitle>Game & Platform</CardTitle>
                     <CardDescription>What kind of game and where should they stream it?</CardDescription>
@@ -294,8 +328,7 @@ export default function PostGigPage() {
                   </CardContent>
                 </Card>
 
-                {/* Budget & Duration */}
-                <Card glass>
+                <Card>
                   <CardHeader>
                     <CardTitle>Budget & Duration</CardTitle>
                     <CardDescription>Set the pay and time commitment.</CardDescription>
@@ -338,8 +371,7 @@ export default function PostGigPage() {
                   </CardContent>
                 </Card>
 
-                {/* Requirements */}
-                <Card glass>
+                <Card>
                   <CardHeader>
                     <CardTitle>Requirements (Optional)</CardTitle>
                     <CardDescription>Filter streamers by their audience size.</CardDescription>
@@ -366,14 +398,12 @@ export default function PostGigPage() {
                   </CardContent>
                 </Card>
 
-                {/* Tags */}
-                <Card glass>
+                <Card>
                   <CardHeader>
                     <CardTitle>Tags</CardTitle>
                     <CardDescription>Add up to 8 tags to help streamers find your gig.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Selected Tags */}
                     <div className="flex flex-wrap gap-2">
                       {form.tags.map(tag => (
                         <Badge key={tag} variant="primary" size="md">
@@ -385,7 +415,6 @@ export default function PostGigPage() {
                       ))}
                     </div>
 
-                    {/* Tag Input */}
                     <div className="flex gap-2">
                       <Input
                         placeholder="Add a tag..."
@@ -409,15 +438,14 @@ export default function PostGigPage() {
                       </Button>
                     </div>
 
-                    {/* Suggested Tags */}
                     <div>
-                      <p className="mb-2 text-[10px] uppercase tracking-wider text-zinc-600 font-medium">Suggested</p>
+                      <p className="mb-2 text-label text-zinc-600">Suggested</p>
                       <div className="flex flex-wrap gap-1.5">
                         {SUGGESTED_TAGS.filter(t => !form.tags.includes(t)).slice(0, 10).map(tag => (
                           <button
                             key={tag}
                             onClick={() => addTag(tag)}
-                            className="rounded-full border border-white/5 bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+                            className="rounded-full surface-1 px-2.5 py-1 text-small text-zinc-500 hover:text-zinc-300 hover:surface-3 transition-all duration-200"
                           >
                             + {tag}
                           </button>
@@ -425,95 +453,85 @@ export default function PostGigPage() {
                       </div>
                     </div>
 
-                    {errors.tags && <p className="text-xs text-red-500">{errors.tags}</p>}
+                    {errors.tags && <p className="text-small text-red-500">{errors.tags}</p>}
                   </CardContent>
                 </Card>
 
-                {/* Submit */}
                 <Button size="lg" className="w-full gap-2" onClick={handleSubmit}>
                   <Send className="h-5 w-5" /> Post Gig
                 </Button>
               </div>
 
-              {/* ── Preview Sidebar ── */}
               <div className="lg:col-span-2">
                 <div className="sticky top-24 space-y-6">
-                  <div className="flex items-center gap-2 text-sm text-zinc-500 mb-4">
+                  <div className="flex items-center gap-2 text-body text-zinc-500 mb-4">
                     <Eye className="h-4 w-4" />
                     <span className="font-medium text-zinc-400">Live Preview</span>
                   </div>
 
-                  <Card glass glow className="overflow-hidden">
-                    {/* Gradient header */}
+                  <Card className="overflow-hidden">
                     <div className={cn(
                       'h-24 bg-gradient-to-br',
-                      form.gameType === 'fortnite' ? 'from-[#00D4FF]/20 to-black' :
-                      form.gameType === 'roblox' ? 'from-[#FF00FF]/20 to-black' :
-                      form.gameType === 'minecraft' ? 'from-[#00FF88]/20 to-black' :
-                      'from-[#FF4500]/20 to-black',
+                      form.gameType === 'fortnite' ? 'from-cyan/20 to-black' :
+                      form.gameType === 'roblox' ? 'from-pink/20 to-black' :
+                      form.gameType === 'minecraft' ? 'from-green/20 to-black' :
+                      'from-brand/20 to-black',
                     )} />
 
                     <CardContent className="space-y-4 -mt-8">
-                      {/* Icon */}
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-black text-2xl">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl surface-2 text-2xl">
                         {form.gameType ? getGameIcon(form.gameType) : '🎯'}
                       </div>
 
-                      {/* Title */}
                       <div>
-                        <h3 className="text-base font-bold text-zinc-100 leading-tight">
+                        <h3 className="text-heading text-zinc-50 leading-tight">
                           {form.title || 'Your Gig Title'}
                         </h3>
-                        <p className="text-sm text-zinc-500 mt-0.5">{form.game || 'Game Name'}</p>
+                        <p className="text-body text-zinc-500 mt-0.5">{form.game || 'Game Name'}</p>
                       </div>
 
-                      {/* Dev Info */}
                       <div className="flex items-center gap-2">
                         <Avatar src={currentDev.avatar} name={currentDev.name} size="sm" />
-                        <span className="text-xs text-zinc-400">Posted by {currentDev.name}</span>
+                        <span className="text-small text-zinc-400">Posted by {currentDev.name}</span>
                       </div>
 
-                      {/* Description */}
-                      <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3">
+                      <p className="text-small text-zinc-500 leading-relaxed line-clamp-3">
                         {form.description || 'Your description will appear here...'}
                       </p>
 
-                      {/* Stats Row */}
-                      <div className="grid grid-cols-3 gap-2 border-t border-white/5 pt-3">
+                      <div className="grid grid-cols-3 gap-2 shadow-divider pt-3">
                         <div className="text-center">
-                          <p className="text-sm font-bold text-zinc-100">{previewBudget > 0 ? formatCurrency(previewBudget) : '$---'}</p>
-                          <p className="text-[10px] text-zinc-600">{getPayoutLabel(form.payoutType)}</p>
+                          <p className="text-caption font-bold text-zinc-50">{previewBudget > 0 ? formatCurrency(previewBudget) : '$---'}</p>
+                          <p className="text-small text-zinc-600">{getPayoutLabel(form.payoutType)}</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-sm font-bold text-zinc-100">{form.duration || '---'}</p>
-                          <p className="text-[10px] text-zinc-600">Duration</p>
+                          <p className="text-caption font-bold text-zinc-50">{form.duration || '---'}</p>
+                          <p className="text-small text-zinc-600">Duration</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-sm font-bold text-zinc-100">{getPlatformLabel(form.platform)}</p>
-                          <p className="text-[10px] text-zinc-600">Platform</p>
+                          <p className="text-caption font-bold text-zinc-50">{form.platform === 'both' ? 'Twitch+YT' : form.platform === 'twitch' ? 'Twitch' : 'YouTube'}</p>
+                          <p className="text-small text-zinc-600">Platform</p>
                         </div>
                       </div>
 
-                      {/* Tags */}
                       {form.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 border-t border-white/5 pt-3">
+                        <div className="flex flex-wrap gap-1.5 shadow-divider pt-3">
                           {form.tags.map(tag => (
                             <Badge key={tag} variant="outline" size="sm">{tag}</Badge>
                           ))}
                         </div>
                       )}
 
-                      {/* Requirements */}
                       {(form.minFollowers || form.minAvgViewers) && (
-                        <div className="border-t border-white/5 pt-3 space-y-2">
+                        <div className="shadow-divider pt-3 space-y-2">
                           {form.minFollowers && (
-                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                            <div className="flex items-center gap-2 text-small text-zinc-500">
                               <Users className="h-3 w-3" />
                               Min {Number(form.minFollowers).toLocaleString()} followers
                             </div>
                           )}
                           {form.minAvgViewers && (
-                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                            <div className="flex items-center gap-2 text-small text-zinc-500">
                               <Users className="h-3 w-3" />
                               Min {Number(form.minAvgViewers).toLocaleString()} avg viewers
                             </div>
@@ -521,24 +539,22 @@ export default function PostGigPage() {
                         </div>
                       )}
 
-                      {/* Apply Button */}
-                      <div className="border-t border-white/5 pt-3">
+                      <div className="shadow-divider pt-3">
                         <div className="h-10 w-full rounded-lg bg-zinc-800/50 flex items-center justify-center">
-                          <span className="text-xs text-zinc-600">Preview — Apply button</span>
+                          <span className="text-small text-zinc-600">Preview — Apply button</span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Validation Summary */}
                   {Object.keys(errors).length > 0 && (
-                    <Card className="border-red-500/30 bg-red-500/5">
+                    <Card className="shadow-[0_0_0_1px_rgba(239,68,68,0.3)] bg-red-500/5">
                       <CardContent className="p-4 space-y-1">
-                        <p className="text-xs font-medium text-red-400 flex items-center gap-1">
+                        <p className="text-small font-medium text-red-400 flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" /> Please fix the following:
                         </p>
                         {Object.values(errors).map((err, i) => (
-                          <p key={i} className="text-[11px] text-red-300/70">• {err}</p>
+                          <p key={i} className="text-small text-red-300/70">&bull; {err}</p>
                         ))}
                       </CardContent>
                     </Card>
@@ -551,4 +567,8 @@ export default function PostGigPage() {
       </div>
     </div>
   )
+}
+
+function cn(...inputs: (string | false | undefined | null)[]) {
+  return inputs.filter(Boolean).join(' ')
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useSyncExternalStore } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,16 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/input'
-import { DataStore, addApplication, updateApplicationStatus, streamers, devs } from '@/lib/data'
+import { DataStore, addApplication, updateApplicationStatus } from '@/lib/data'
 import {
   cn,
   formatCurrency,
   timeAgo,
   getGameIcon,
   getStatusColor,
-  getStatusBg,
-  getPayoutLabel,
-  getPlatformLabel,
   formatNumber,
 } from '@/lib/utils'
 import {
@@ -28,44 +25,35 @@ import {
   Clock,
   Calendar,
   Eye,
-  MessageSquare,
   ArrowLeft,
   Sparkles,
   CheckCircle2,
   XCircle,
-  Target,
   Monitor,
   ChevronRight,
   Send,
 } from 'lucide-react'
 import type { Application, Gig } from '@/lib/types'
+import { useAuth } from '@/lib/auth'
 
-/* ────────── Gradient background per game type ────────── */
 const gameGradients: Record<string, string> = {
-  steam: 'from-[#FF4500]/20 via-black to-black',
-  fortnite: 'from-[#00D4FF]/20 via-black to-black',
-  roblox: 'from-[#FF00FF]/20 via-black to-black',
-  minecraft: 'from-[#00FF88]/20 via-black to-black',
-  other: 'from-[#FFE600]/20 via-black to-black',
+  steam: 'from-brand/20 via-black to-black',
+  fortnite: 'from-cyan/20 via-black to-black',
+  roblox: 'from-pink/20 via-black to-black',
+  minecraft: 'from-green/20 via-black to-black',
+  other: 'from-yellow/20 via-black to-black',
 }
 
-const gameAccents: Record<string, string> = {
-  steam: 'text-[#FF4500]',
-  fortnite: 'text-[#00D4FF]',
-  roblox: 'text-[#FF00FF]',
-  minecraft: 'text-[#00FF88]',
-  other: 'text-[#FFE600]',
-}
-
-/* ────────── Apply Form ────────── */
 function ApplyForm({
   gigId,
   gig,
   onClose,
+  user,
 }: {
   gigId: string
   gig: Gig
   onClose: () => void
+  user: NonNullable<ReturnType<typeof useAuth>['user']>
 }) {
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -80,23 +68,23 @@ function ApplyForm({
       setError('Message must be at least 20 characters')
       return
     }
-    // Create the application
     const now = new Date().toISOString()
     const newApp = {
       id: `app-${Date.now()}`,
       gigId,
-      streamerId: 's1',
-      streamerName: 'LunaRae',
-      streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=lunarae',
-      streamerFollowers: 12800,
-      streamerAvgViewers: 420,
+      streamerId: user.id,
+      streamerName: user.name,
+      streamerAvatar: user.avatar,
+      streamerFollowers: user.followers ?? 0,
+      streamerAvgViewers: user.avgViewers ?? 0,
       message: message.trim(),
       status: 'pending' as const,
       appliedAt: now,
     }
     addApplication(newApp)
-    // Increment the gig's applicant count
-    gig.applicants++
+    const gigs = DataStore.getGigs()
+    const g = gigs.find(g => g.id === gigId)
+    if (g) g.applicants++
     DataStore.notify()
     setSubmitted(true)
     setError('')
@@ -104,13 +92,13 @@ function ApplyForm({
 
   if (submitted) {
     return (
-      <Card glass glow className="overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="flex flex-col items-center gap-4 p-8 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#00FF88]/10">
-            <CheckCircle2 className="h-8 w-8 text-[#00FF88]" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full surface-3">
+            <CheckCircle2 className="h-8 w-8 text-green" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-100">Application Sent!</h3>
-          <p className="text-sm text-zinc-500 max-w-sm">
+          <h3 className="text-heading text-zinc-50">Application Sent!</h3>
+          <p className="text-body text-zinc-500 max-w-sm">
             The dev will review your application based on your vibe score, followers, and message.
             You&apos;ll hear back soon.
           </p>
@@ -121,14 +109,14 @@ function ApplyForm({
   }
 
   return (
-    <Card glass glow className="overflow-hidden">
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Apply for this Gig</CardTitle>
         <CardDescription>Introduce yourself. Tell the dev why you&apos;re the perfect fit.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
-          placeholder="Hey! I'd love to stream your game. I've got 12k followers, average 420 viewers, and my community loves this type of content. I can do the full 3-hour slot and clip highlights for your marketing. Let's make some great content together! 🔥"
+          placeholder="Hey! I'd love to stream your game. I've got 12k followers, average 420 viewers, and my community loves this type of content. I can do the full 3-hour slot and clip highlights for your marketing. Let's make some great content together!"
           value={message}
           onChange={e => {
             setMessage(e.target.value)
@@ -143,7 +131,7 @@ function ApplyForm({
               <Badge variant="default" size="sm">min 20</Badge>
             )}
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && <p className="text-small text-red-500">{error}</p>}
         </div>
         <div className="flex gap-3">
           <Button onClick={handleSubmit} className="flex-1 gap-2">
@@ -156,7 +144,6 @@ function ApplyForm({
   )
 }
 
-/* ────────── Applicants Section ────────── */
 function ApplicantsSection({
   apps,
   isDevView,
@@ -167,7 +154,7 @@ function ApplicantsSection({
   if (apps.length === 0) return null
 
   return (
-    <Card glass className="overflow-hidden">
+    <Card className="overflow-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Applicants ({apps.length})</CardTitle>
@@ -183,11 +170,11 @@ function ApplicantsSection({
       </CardHeader>
       <CardContent className="space-y-4">
         {apps.map(app => {
-          const streamer = streamers.find(s => s.id === app.streamerId)
+          const streamer = DataStore.getStreamers().find(s => s.id === app.streamerId)
           return (
             <div
               key={app.id}
-              className="rounded-lg border border-white/5 bg-white/[0.02] p-4 transition-colors hover:bg-white/[0.04]"
+              className="rounded-lg surface-1 p-4 transition-colors hover:surface-2"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
@@ -196,20 +183,20 @@ function ApplicantsSection({
                     app.status === 'rejected' ? 'offline' : 'away'
                   } />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-zinc-100 truncate">{app.streamerName}</p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                    <p className="text-caption font-semibold text-zinc-50 truncate">{app.streamerName}</p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-small text-zinc-500">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         {formatNumber(app.streamerFollowers)} followers
                       </span>
-                      <span className="text-zinc-700">·</span>
+                      <span className="text-zinc-700">&middot;</span>
                       <span className="flex items-center gap-1">
                         <Eye className="h-3 w-3" />
                         {formatNumber(app.streamerAvgViewers)} avg viewers
                       </span>
                       {streamer && (
                         <>
-                          <span className="text-zinc-700">·</span>
+                          <span className="text-zinc-700">&middot;</span>
                           <span className="flex items-center gap-1">
                             <Star className="h-3 w-3" />
                             Vibe {streamer.vibeScore}
@@ -233,18 +220,16 @@ function ApplicantsSection({
                 </Badge>
               </div>
 
-              {/* Message */}
-              <div className="mt-3 rounded-lg bg-white/[0.02] border border-white/5 p-3">
-                <p className="text-xs text-zinc-400 leading-relaxed">&ldquo;{app.message}&rdquo;</p>
+              <div className="mt-3 rounded-lg surface-1 p-3">
+                <p className="text-small text-zinc-400 leading-relaxed">&ldquo;{app.message}&rdquo;</p>
               </div>
 
-              {/* Dev Controls */}
               {isDevView && app.status === 'pending' && (
                 <div className="mt-3 flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="primary"
-                    className="gap-1.5 text-xs"
+                    className="gap-1.5 text-small"
                     onClick={() => updateApplicationStatus(app.id, 'accepted')}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -253,13 +238,13 @@ function ApplicantsSection({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="gap-1.5 text-xs text-red-400 hover:text-red-300"
+                    className="gap-1.5 text-small text-red-400 hover:text-red-300"
                     onClick={() => updateApplicationStatus(app.id, 'rejected')}
                   >
                     <XCircle className="h-3.5 w-3.5" />
                     Reject
                   </Button>
-                  <span className="text-[10px] text-zinc-600 ml-auto">
+                  <span className="text-small text-zinc-600 ml-auto">
                     Applied {timeAgo(app.appliedAt)}
                   </span>
                 </div>
@@ -267,7 +252,7 @@ function ApplicantsSection({
 
               {!isDevView && (
                 <div className="mt-2 text-right">
-                  <span className="text-[10px] text-zinc-600">
+                  <span className="text-small text-zinc-600">
                     Applied {timeAgo(app.appliedAt)}
                   </span>
                 </div>
@@ -280,11 +265,11 @@ function ApplicantsSection({
   )
 }
 
-/* ────────── Gig Detail Page ────────── */
 export default function GigDetailPage() {
   const params = useParams()
   const router = useRouter()
   const gigId = params?.id as string
+  const { user } = useAuth()
 
   const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
   const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
@@ -292,34 +277,38 @@ export default function GigDetailPage() {
   const gig = useMemo(() => allGigs.find(g => g.id === gigId), [allGigs, gigId])
   const gigApps = useMemo(() => allApps.filter(a => a.gigId === gigId), [allApps, gigId])
   const [showApplyForm, setShowApplyForm] = useState(false)
-  const [isDevView, setIsDevView] = useState(false)
+const [isDevView, setIsDevView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('dev') === 'true'
+    }
+    return false
+  })
 
-  // Check if s1 (LunaRae) has already applied
   const hasApplied = useMemo(
-    () => allApps.some(a => a.gigId === gigId && a.streamerId === 's1'),
-    [allApps, gigId],
+    () => user ? allApps.some(a => a.gigId === gigId && a.streamerId === user.id) : false,
+    [allApps, gigId, user],
   )
   const existingApp = useMemo(
-    () => allApps.find(a => a.gigId === gigId && a.streamerId === 's1'),
-    [allApps, gigId],
+    () => user ? allApps.find(a => a.gigId === gigId && a.streamerId === user.id) : undefined,
+    [allApps, gigId, user],
   )
 
-  // Check for ?dev=true query param
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      setIsDevView(params.get('dev') === 'true')
+  const handleApplyClick = () => {
+    if (!user) {
+      router.push('/auth')
+      return
     }
-  }, [])
+    setShowApplyForm(true)
+  }
 
   if (!gig) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-black gap-6 px-6">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-zinc-900">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full surface-3">
           <Zap className="h-10 w-10 text-zinc-700" />
         </div>
-        <h1 className="text-2xl font-bold text-zinc-100">Gig Not Found</h1>
-        <p className="text-sm text-zinc-500">This gig doesn&apos;t exist or has been removed.</p>
+        <h1 className="text-heading text-zinc-50">Gig Not Found</h1>
+        <p className="text-body text-zinc-500">This gig doesn&apos;t exist or has been removed.</p>
         <Link href="/streamer">
           <Button variant="secondary" className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Back to Gigs
@@ -330,195 +319,180 @@ export default function GigDetailPage() {
   }
 
   const gradient = gameGradients[gig.gameType] || gameGradients.steam
-  const accent = gameAccents[gig.gameType] || gameAccents.steam
 
   return (
     <div className="min-h-screen bg-black">
-      {/* ── Header ── */}
-      <header className="border-b border-white/5 bg-black/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="shadow-divider sticky top-0 z-50 bg-black">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link href="/streamer" className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors">
+          <Link href="/streamer" className="flex items-center gap-2 text-body text-zinc-400 hover:text-zinc-100 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Gigs
           </Link>
           <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#FF4500]" />
-            <span className="text-sm font-bold text-zinc-100">Vibe</span>
+            <Sparkles className="h-5 w-5 text-brand" />
+            <span className="text-caption font-bold text-zinc-50">Vibe</span>
           </Link>
         </div>
       </header>
 
-      {/* ── Hero Area ── */}
       <div className={cn('relative bg-gradient-to-b', gradient)}>
         <div className="mx-auto max-w-4xl px-6 py-16">
           <div className="flex flex-col gap-6">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-xs text-zinc-600">
+            <div className="flex items-center gap-2 text-small text-zinc-600">
               <Link href="/streamer" className="hover:text-zinc-400">Gigs</Link>
               <ChevronRight className="h-3 w-3" />
               <span className="text-zinc-400">{gig.game}</span>
             </div>
 
-            {/* Title & Game */}
             <div className="flex items-start gap-5">
               <span className="text-5xl">{getGameIcon(gig.gameType)}</span>
               <div className="min-w-0">
-                <h1 className="text-3xl font-bold text-zinc-100 sm:text-4xl">{gig.title}</h1>
+                <h1 className="text-display text-zinc-50">{gig.title}</h1>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <Badge variant={gig.gameType === 'fortnite' ? 'cyan' : gig.gameType === 'roblox' ? 'pink' : gig.gameType === 'minecraft' ? 'green' : 'primary'} size="md">
                     {gig.gameType}
                   </Badge>
-                  <span className="text-sm text-zinc-400">{gig.game}</span>
-                  <span className="text-zinc-600">·</span>
-                  <span className={cn('text-sm font-semibold', getStatusColor(gig.status))}>
+                  <span className="text-body text-zinc-400">{gig.game}</span>
+                  <span className="text-zinc-600">&middot;</span>
+                  <span className={cn('text-caption font-semibold', getStatusColor(gig.status))}>
                     {gig.status.replace('_', ' ')}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Dev Info */}
-            <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3 backdrop-blur-xl">
+            <div className="flex items-center gap-3 rounded-xl surface-2 px-4 py-3">
               <Avatar src={gig.devAvatar} name={gig.devName} size="md" />
               <div>
-                <p className="text-sm font-medium text-zinc-100">Posted by {gig.devName}</p>
-                <p className="text-xs text-zinc-500">{timeAgo(gig.createdAt)}</p>
+                <p className="text-caption font-medium text-zinc-50">Posted by {gig.devName}</p>
+                <p className="text-small text-zinc-500">{timeAgo(gig.createdAt)}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Content ── */}
       <div className="mx-auto max-w-4xl px-6 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main Content */}
           <div className="space-y-8 lg:col-span-2">
-            {/* Stats Row */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Card glass className="p-4">
-                <DollarSign className="mb-2 h-4 w-4 text-[#FF4500]" />
-                <p className="text-lg font-bold text-zinc-100">{formatCurrency(gig.budget)}</p>
-                <p className="text-xs text-zinc-500">{getPayoutLabel(gig.payoutType)}</p>
+              <Card className="p-4">
+                <DollarSign className="mb-2 h-4 w-4 text-brand" />
+                <p className="text-heading text-zinc-50">{formatCurrency(gig.budget)}</p>
+                <p className="text-small text-zinc-500">{gig.payoutType === 'fixed' ? 'Fixed' : gig.payoutType === 'per_hour' ? 'Per Hour' : 'Per Viewer'}</p>
               </Card>
-              <Card glass className="p-4">
-                <Clock className="mb-2 h-4 w-4 text-[#00D4FF]" />
-                <p className="text-lg font-bold text-zinc-100">{gig.duration}</p>
-                <p className="text-xs text-zinc-500">Duration</p>
+              <Card className="p-4">
+                <Clock className="mb-2 h-4 w-4 text-cyan" />
+                <p className="text-heading text-zinc-50">{gig.duration}</p>
+                <p className="text-small text-zinc-500">Duration</p>
               </Card>
-              <Card glass className="p-4">
-                <Users className="mb-2 h-4 w-4 text-[#FFE600]" />
-                <p className="text-lg font-bold text-zinc-100">{gig.applicants}</p>
-                <p className="text-xs text-zinc-500">Applicants</p>
+              <Card className="p-4">
+                <Users className="mb-2 h-4 w-4 text-yellow" />
+                <p className="text-heading text-zinc-50">{gig.applicants}</p>
+                <p className="text-small text-zinc-500">Applicants</p>
               </Card>
-              <Card glass className="p-4">
-                <Monitor className="mb-2 h-4 w-4 text-[#00FF88]" />
-                <p className="text-lg font-bold text-zinc-100">{getPlatformLabel(gig.platform)}</p>
-                <p className="text-xs text-zinc-500">Platform</p>
+              <Card className="p-4">
+                <Monitor className="mb-2 h-4 w-4 text-green" />
+                <p className="text-heading text-zinc-50">{gig.platform === 'both' ? 'Twitch + YouTube' : gig.platform === 'twitch' ? 'Twitch' : 'YouTube'}</p>
+                <p className="text-small text-zinc-500">Platform</p>
               </Card>
             </div>
 
-            {/* Description */}
-            <Card glass>
+            <Card>
               <CardHeader>
                 <CardTitle>Description</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm leading-relaxed text-zinc-300 whitespace-pre-line">{gig.description}</p>
+                <p className="text-body leading-relaxed text-zinc-300 whitespace-pre-line">{gig.description}</p>
               </CardContent>
             </Card>
 
-            {/* Requirements */}
-            <Card glass>
+            <Card>
               <CardHeader>
                 <CardTitle>Requirements</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {gig.minFollowers && (
-                    <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <div className="flex items-center gap-3 rounded-lg surface-1 px-4 py-3">
                       <Users className="h-5 w-5 text-zinc-600" />
                       <div>
-                        <p className="text-xs text-zinc-500">Min Followers</p>
-                        <p className="text-sm font-semibold text-zinc-100">{formatNumber(gig.minFollowers)}</p>
+                        <p className="text-small text-zinc-500">Min Followers</p>
+                        <p className="text-caption font-semibold text-zinc-50">{formatNumber(gig.minFollowers)}</p>
                       </div>
                     </div>
                   )}
                   {gig.minAvgViewers && (
-                    <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <div className="flex items-center gap-3 rounded-lg surface-1 px-4 py-3">
                       <Eye className="h-5 w-5 text-zinc-600" />
                       <div>
-                        <p className="text-xs text-zinc-500">Min Avg Viewers</p>
-                        <p className="text-sm font-semibold text-zinc-100">{formatNumber(gig.minAvgViewers)}</p>
+                        <p className="text-small text-zinc-500">Min Avg Viewers</p>
+                        <p className="text-caption font-semibold text-zinc-50">{formatNumber(gig.minAvgViewers)}</p>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3">
+                  <div className="flex items-center gap-3 rounded-lg surface-1 px-4 py-3">
                     <Monitor className="h-5 w-5 text-zinc-600" />
                     <div>
-                      <p className="text-xs text-zinc-500">Platform</p>
-                      <p className="text-sm font-semibold text-zinc-100">{getPlatformLabel(gig.platform)}</p>
+                      <p className="text-small text-zinc-500">Platform</p>
+                      <p className="text-caption font-semibold text-zinc-50">{gig.platform === 'both' ? 'Twitch + YouTube' : gig.platform === 'twitch' ? 'Twitch' : 'YouTube'}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3">
+                  <div className="flex items-center gap-3 rounded-lg surface-1 px-4 py-3">
                     <Calendar className="h-5 w-5 text-zinc-600" />
                     <div>
-                      <p className="text-xs text-zinc-500">Scheduled</p>
-                      <p className="text-sm font-semibold text-zinc-100">{new Date(gig.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="text-small text-zinc-500">Scheduled</p>
+                      <p className="text-caption font-semibold text-zinc-50">{new Date(gig.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Tags */}
             <div className="flex flex-wrap gap-2">
               {gig.tags.map(tag => (
                 <Badge key={tag} variant="outline" size="md">{tag}</Badge>
               ))}
             </div>
 
-            {/* Apply Form */}
-            {showApplyForm ? (
-              <ApplyForm gigId={gig.id} gig={gig} onClose={() => setShowApplyForm(false)} />
+            {showApplyForm && user ? (
+              <ApplyForm gigId={gig.id} gig={gig} onClose={() => setShowApplyForm(false)} user={user} />
             ) : (
               gig.status === 'open' && !hasApplied && (
-                <Button size="lg" className="w-full gap-2" onClick={() => setShowApplyForm(true)}>
+                <Button size="lg" className="w-full gap-2" onClick={handleApplyClick}>
                   <Send className="h-5 w-5" /> Apply Now
                 </Button>
               )
             )}
 
             {hasApplied && !showApplyForm && (
-              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-6 text-center backdrop-blur-xl">
+              <div className="rounded-xl surface-2 p-6 text-center">
                 <Badge variant={existingApp?.status === 'accepted' ? 'green' : existingApp?.status === 'rejected' ? 'default' : 'primary'} size="lg">
-                  {existingApp?.status === 'accepted' ? '✅ Accepted!' : existingApp?.status === 'rejected' ? '❌ Rejected' : '✓ Already Applied'}
+                  {existingApp?.status === 'accepted' ? 'Accepted!' : existingApp?.status === 'rejected' ? 'Rejected' : 'Already Applied'}
                 </Badge>
               </div>
             )}
 
             {gig.status !== 'open' && !showApplyForm && !hasApplied && (
-              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-6 text-center backdrop-blur-xl">
+              <div className="rounded-xl surface-2 p-6 text-center">
                 <Badge variant={gig.status === 'completed' ? 'yellow' : 'default'} size="lg">
-                  {gig.status === 'completed' ? '🎉 This gig is completed' : gig.status === 'in_progress' ? '🔄 In progress' : '🚫 Cancelled'}
+                  {gig.status === 'completed' ? 'Completed' : gig.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
                 </Badge>
               </div>
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Schedule */}
-            <Card glass>
+            <Card>
               <CardHeader>
                 <CardTitle>Schedule</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-[#FF4500]" />
+                  <Calendar className="h-4 w-4 text-brand" />
                   <div>
-                    <p className="text-xs text-zinc-500">Date</p>
-                    <p className="text-sm font-medium text-zinc-100">
+                    <p className="text-small text-zinc-500">Date</p>
+                    <p className="text-caption font-medium text-zinc-50">
                       {new Date(gig.scheduledDate).toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
@@ -529,38 +503,37 @@ export default function GigDetailPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Clock className="h-4 w-4 text-[#00D4FF]" />
+                  <Clock className="h-4 w-4 text-cyan" />
                   <div>
-                    <p className="text-xs text-zinc-500">Duration</p>
-                    <p className="text-sm font-medium text-zinc-100">{gig.duration}</p>
+                    <p className="text-small text-zinc-500">Duration</p>
+                    <p className="text-caption font-medium text-zinc-50">{gig.duration}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <DollarSign className="h-4 w-4 text-[#00FF88]" />
+                  <DollarSign className="h-4 w-4 text-green" />
                   <div>
-                    <p className="text-xs text-zinc-500">Payout</p>
-                    <p className="text-sm font-medium text-zinc-100">{formatCurrency(gig.budget)} ({getPayoutLabel(gig.payoutType)})</p>
+                    <p className="text-small text-zinc-500">Payout</p>
+                    <p className="text-caption font-medium text-zinc-50">{formatCurrency(gig.budget)} ({gig.payoutType === 'fixed' ? 'Fixed' : gig.payoutType === 'per_hour' ? 'Per Hour' : 'Per Viewer'})</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Applicants */}
-            <Card glass>
+            <Card>
               <CardHeader>
                 <CardTitle>Applicants ({gigApps.length})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {gigApps.length === 0 ? (
-                  <p className="text-xs text-zinc-600">No applicants yet. Be the first!</p>
+                  <p className="text-small text-zinc-600">No applicants yet. Be the first!</p>
                 ) : (
                   gigApps.slice(0, 4).map(app => (
                     <div key={app.id} className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0">
                         <Avatar src={app.streamerAvatar} name={app.streamerName} size="sm" />
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-zinc-100 truncate">{app.streamerName}</p>
-                          <p className="text-[10px] text-zinc-500">{formatNumber(app.streamerFollowers)} followers</p>
+                          <p className="text-small font-medium text-zinc-50 truncate">{app.streamerName}</p>
+                          <p className="text-small text-zinc-500">{formatNumber(app.streamerFollowers)} followers</p>
                         </div>
                       </div>
                       <Badge
@@ -577,7 +550,7 @@ export default function GigDetailPage() {
                   ))
                 )}
                 {gigApps.length > 4 && (
-                  <p className="text-xs text-zinc-600 text-center pt-2 border-t border-white/5">
+                  <p className="text-small text-zinc-600 text-center pt-2 shadow-divider">
                     +{gigApps.length - 4} more applicants
                   </p>
                 )}
@@ -586,7 +559,6 @@ export default function GigDetailPage() {
           </div>
         </div>
 
-        {/* ── Full Applicants Section ── */}
         <div className="mt-12">
           <ApplicantsSection apps={gigApps} isDevView={isDevView} />
         </div>

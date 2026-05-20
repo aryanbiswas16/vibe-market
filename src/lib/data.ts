@@ -1,4 +1,31 @@
+'use client'
+
 import type { User, Gig, Application } from './types'
+
+const STORAGE_KEY = 'vibe_data'
+
+interface PersistedData {
+  streamers: User[]
+  devs: User[]
+  gigs: Gig[]
+  applications: Application[]
+}
+
+function getPersistedData(): PersistedData | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch { /* ignore */ }
+  return null
+}
+
+function setPersistedData(data: PersistedData) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch { /* ignore */ }
+}
 
 export const streamers: User[] = [
   {
@@ -306,54 +333,9 @@ export const devs: User[] = [
   },
 ]
 
-/* ────────── Reactive DataStore ────────── */
-type Listener = () => void
-const _listeners = new Set<Listener>()
+/* ────────── Mock Data Arrays (must be before DataStore to avoid TDZ) ────────── */
 
-export const DataStore = {
-  subscribe: (listener: Listener): (() => void) => {
-    _listeners.add(listener)
-    return () => _listeners.delete(listener)
-  },
-  notify: () => {
-    _listeners.forEach(l => l())
-  },
-  getGigs: (): Gig[] => gigs,
-  getApplications: (): Application[] => applications,
-  getStreamers: (): User[] => streamers,
-  getDevs: (): User[] => devs,
-  // Required for useSyncExternalStore SSR — returns same initial data
-  getServerSnapshot: (): Gig[] => gigs,
-  getAppServerSnapshot: (): Application[] => applications,
-}
-
-export function addGig(gig: Gig) {
-  gigs.push(gig)
-  DataStore.notify()
-}
-
-export function addApplication(app: Application) {
-  applications.push(app)
-  DataStore.notify()
-}
-
-export function updateApplicationStatus(appId: string, status: Application['status']) {
-  const app = applications.find(a => a.id === appId)
-  if (app) {
-    app.status = status
-    DataStore.notify()
-  }
-}
-
-export function closeGig(gigId: string) {
-  const gig = gigs.find(g => g.id === gigId)
-  if (gig) {
-    gig.status = 'cancelled'
-    DataStore.notify()
-  }
-}
-
-export const gigs: Gig[] = [
+const _initialGigs: Gig[] = [
   {
     id: 'g1',
     devId: 'd2',
@@ -675,7 +657,7 @@ export const gigs: Gig[] = [
   },
 ]
 
-export const applications: Application[] = [
+const _initialApps: Application[] = [
   {
     id: 'a1',
     gigId: 'g1',
@@ -776,7 +758,7 @@ export const applications: Application[] = [
     streamerFollowers: 7200,
     streamerAvgViewers: 250,
     message:
-      'I do horror streams occasionally and DARKWOOD has been on my list! Would love to feature it as a sponsored segment. My audience is very engaged.',
+      'Horror games are my comfort zone lol. DARKWOOD has been on my list forever. Would love to do a sponsored segment and give it a genuine playthrough.',
     status: 'pending',
     appliedAt: '2026-05-18T09:00:00Z',
   },
@@ -789,9 +771,9 @@ export const applications: Application[] = [
     streamerFollowers: 5500,
     streamerAvgViewers: 180,
     message:
-      'Minecraft SMPs are my favorite content to stream. Custom enchantments sound sick. I can commit to the full 4-hour launch and build something epic.',
-    status: 'accepted',
-    appliedAt: '2026-05-17T15:00:00Z',
+      'Minecraft SMP is my entire brand. I play on 3 servers already and my community loves base tours and progression content. I can bring the hype for your launch day!',
+    status: 'pending',
+    appliedAt: '2026-05-17T14:00:00Z',
   },
   {
     id: 'a10',
@@ -802,9 +784,9 @@ export const applications: Application[] = [
     streamerFollowers: 10200,
     streamerAvgViewers: 380,
     message:
-      'Modded Minecraft and custom plugins are my passion. I would love to explore your SMP terrain and showcase the custom features. Can also help bug test!',
+      'Custom enchantments AND player shops? This SMP sounds next level. I specialize in modded/plugin-heavy Minecraft content. Can do a full 4-hour first-day stream.',
     status: 'pending',
-    appliedAt: '2026-05-18T11:00:00Z',
+    appliedAt: '2026-05-18T11:30:00Z',
   },
   {
     id: 'a11',
@@ -815,22 +797,22 @@ export const applications: Application[] = [
     streamerFollowers: 12800,
     streamerAvgViewers: 420,
     message:
-      'I have already beaten HOLLOW VESSEL on my personal save. The boss rush will be no problem. I can do commentary on the lore and mechanics too.',
+      'I love a challenge. 5 bosses back-to-back sounds insane. I have completed HOLLOW VESSEL on my own time — I can absolutely beat the boss rush on stream.',
     status: 'pending',
-    appliedAt: '2026-05-19T10:30:00Z',
+    appliedAt: '2026-05-19T15:45:00Z',
   },
   {
     id: 'a12',
     gigId: 'g7',
-    streamerId: 's10',
-    streamerName: 'TurboShark',
-    streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=turboshark',
-    streamerFollowers: 8700,
-    streamerAvgViewers: 310,
+    streamerId: 's3',
+    streamerName: 'KaiZen',
+    streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=kaizen',
+    streamerFollowers: 8900,
+    streamerAvgViewers: 320,
     message:
-      'Obbies are my guilty pleasure. Grapple hooks AND anti-gravity? I am going for that $100 bonus. Send me the link.',
-    status: 'accepted',
-    appliedAt: '2026-05-17T20:00:00Z',
+      'SKY LADDER looks sick. Grapple hooks + anti-gravity is a fresh take on obbys. I will go for 100 levels — that $100 bonus is mine.',
+    status: 'pending',
+    appliedAt: '2026-05-18T16:20:00Z',
   },
   {
     id: 'a13',
@@ -841,7 +823,7 @@ export const applications: Application[] = [
     streamerFollowers: 7200,
     streamerAvgViewers: 250,
     message:
-      'Underwater exploration + haunting soundtrack is my exact vibe. I do cozy Sunday streams and this would be perfect for that slot.',
+      'This sounds like my exact vibe. Underwater exploration with a haunting soundtrack? Perfect for a cozy/chill stream. I will fully immerse myself in the first 2 chapters.',
     status: 'pending',
     appliedAt: '2026-05-15T14:00:00Z',
   },
@@ -854,86 +836,130 @@ export const applications: Application[] = [
     streamerFollowers: 5100,
     streamerAvgViewers: 190,
     message:
-      'As an indie game dev and cozy streamer, ECHOES OF THE DEEP is exactly the kind of game I love to feature. The art direction in the trailer is stunning.',
-    status: 'accepted',
-    appliedAt: '2026-05-14T20:00:00Z',
+      'Exploration games with deep atmosphere are my favorite content to make. Would love to showcase this indie title — the screenshots look gorgeous.',
+    status: 'pending',
+    appliedAt: '2026-05-16T10:30:00Z',
   },
   {
     id: 'a15',
-    gigId: 'g9',
-    streamerId: 's6',
-    streamerName: 'MellowMorph',
-    streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=mellowmorph',
-    streamerFollowers: 3800,
-    streamerAvgViewers: 145,
+    gigId: 'g10',
+    streamerId: 's8',
+    streamerName: 'DriftKing',
+    streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=driftking',
+    streamerFollowers: 6400,
+    streamerAvgViewers: 220,
     message:
-      'Tactical roguelikes are my secret obsession. Radio chatter affecting enemy behavior is such a cool mechanic. I can definitely feature the demo.',
-    status: 'pending',
-    appliedAt: '2026-05-17T08:00:00Z',
+      'Box fighting is literally all I do. I can commentate and hype the matches while holding my own. This is the perfect gig for me.',
+    status: 'accepted',
+    appliedAt: '2026-05-11T09:00:00Z',
   },
   {
     id: 'a16',
-    gigId: 'g9',
+    gigId: 'g10',
     streamerId: 's5',
     streamerName: 'Vexxus',
     streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=vexxus',
     streamerFollowers: 15400,
     streamerAvgViewers: 560,
     message:
-      'I sometimes branch out from Fortnite for tactical games. ROGUE FREQUENCY sounds fresh. My chat would love the strategy elements.',
-    status: 'rejected',
-    appliedAt: '2026-05-16T10:00:00Z',
+      'Tournament hosting with 1v1 box fights? This is content gold. I can co-host, keep the energy high, and make sure the stream is entertaining even between matches.',
+    status: 'pending',
+    appliedAt: '2026-05-12T12:00:00Z',
   },
   {
     id: 'a17',
-    gigId: 'g11',
+    gigId: 'g4',
     streamerId: 's4',
     streamerName: 'PixelKitten',
     streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=pixelkitten',
     streamerFollowers: 7200,
     streamerAvgViewers: 250,
     message:
-      'FRUIT FUSION looks adorable. I do casual Fridays and this would be a perfect fit. Match-3 with roguelike elements is such a fun combo.',
-    status: 'pending',
-    appliedAt: '2026-05-18T18:00:00Z',
-  },
-  {
-    id: 'a18',
-    gigId: 'g12',
-    streamerId: 's2',
-    streamerName: 'Hexical',
-    streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=hexical',
-    streamerFollowers: 5500,
-    streamerAvgViewers: 180,
-    message:
-      'Parkour Paradise sounds right up my alley. I am known for Minecraft parkour content and would love to showcase all 5 maps. Dropper Infinite sounds wild.',
-    status: 'pending',
-    appliedAt: '2026-05-19T09:00:00Z',
-  },
-  {
-    id: 'a19',
-    gigId: 'g12',
-    streamerId: 's7',
-    streamerName: 'ByteBae',
-    streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=bytebae',
-    streamerFollowers: 10200,
-    streamerAvgViewers: 380,
-    message:
-      'I can do a full minigame marathon. BedWars Remix and SkyWars 2.0 are exactly what my community wants to see. Let me know if you want me to focus on any specific map.',
-    status: 'pending',
-    appliedAt: '2026-05-19T11:00:00Z',
-  },
-  {
-    id: 'a20',
-    gigId: 'g15',
-    streamerId: 's6',
-    streamerName: 'MellowMorph',
-    streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=mellowmorph',
-    streamerFollowers: 3800,
-    streamerAvgViewers: 145,
-    message:
-      'Completed full DARKWOOD playthrough on stream. Happy to provide a Steam testimonial and clips for your marketing.',
+      'Horror is surprisingly one of my most-requested categories. I would love to do a sponsored segment for DARKWOOD.',
     status: 'completed',
-    appliedAt: '2026-04-25T14:00:00Z',
+    appliedAt: '2026-05-17T20:00:00Z',
   },
 ]
+
+/* ────────── Reactive DataStore (with persistence) ────────── */
+
+type Listener = () => void
+const _listeners = new Set<Listener>()
+
+// Initialize from localStorage or use mock data
+function initData(): { gigs: Gig[]; applications: Application[] } {
+  const persisted = getPersistedData()
+  if (persisted) {
+    // Restore users from persisted data
+    if (persisted.streamers.length > 0) {
+      streamers.length = 0
+      streamers.push(...persisted.streamers)
+    }
+    if (persisted.devs.length > 0) {
+      devs.length = 0
+      devs.push(...persisted.devs)
+    }
+    return {
+      gigs: persisted.gigs,
+      applications: persisted.applications,
+    }
+  }
+  // First visit — persist the mock data
+  setPersistedData({ streamers, devs, gigs: _initialGigs, applications: _initialApps })
+  return { gigs: _initialGigs, applications: _initialApps }
+}
+
+function persist() {
+  setPersistedData({ streamers, devs, gigs, applications })
+}
+
+// Initialize live arrays from localStorage or mock data
+const _init = initData()
+export const gigs: Gig[] = _init.gigs
+export const applications: Application[] = _init.applications
+
+export const DataStore = {
+  subscribe: (listener: Listener): (() => void) => {
+    _listeners.add(listener)
+    return () => _listeners.delete(listener)
+  },
+  notify: () => {
+    _listeners.forEach(l => l())
+  },
+  getGigs: (): Gig[] => gigs,
+  getApplications: (): Application[] => applications,
+  getStreamers: (): User[] => streamers,
+  getDevs: (): User[] => devs,
+  getServerSnapshot: (): Gig[] => gigs,
+  getAppServerSnapshot: (): Application[] => applications,
+}
+
+export function addGig(gig: Gig) {
+  gigs.push(gig)
+  DataStore.notify()
+  persist()
+}
+
+export function addApplication(app: Application) {
+  applications.push(app)
+  DataStore.notify()
+  persist()
+}
+
+export function updateApplicationStatus(appId: string, status: Application['status']) {
+  const app = applications.find(a => a.id === appId)
+  if (app) {
+    app.status = status
+    DataStore.notify()
+    persist()
+  }
+}
+
+export function closeGig(gigId: string) {
+  const gig = gigs.find(g => g.id === gigId)
+  if (gig) {
+    gig.status = 'cancelled'
+    DataStore.notify()
+    persist()
+  }
+}

@@ -1,23 +1,11 @@
 @import "tailwindcss";
 
-/* ──────────── Theme Configuration (Tailwind v4 @theme) ──────────── */
-
 @theme inline {
-  /* Base Colors */
   --color-black: #000000;
   --color-white: #ffffff;
 
-  /* Accents */
-  --color-orange: #FF4500;
-  --color-green: #00FF88;
-  --color-cyan: #00D4FF;
-  --color-pink: #FF00FF;
-  --color-yellow: #FFE600;
-
-  /* Brand alias */
   --color-brand: #FF4500;
 
-  /* Neutral Scale — true black based */
   --color-zinc-50:  #fafafa;
   --color-zinc-100: #f4f4f5;
   --color-zinc-200: #e4e4e7;
@@ -30,31 +18,20 @@
   --color-zinc-900: #18181b;
   --color-zinc-950: #09090b;
 
-  /* Fonts */
+  --color-green: #00FF88;
+  --color-cyan: #00D4FF;
+  --color-pink: #FF00FF;
+  --color-yellow: #FFE600;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 
-  /* Glass Effect */
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-  /* Glow */
-  --glow-orange: 0 0 30px -8px rgba(255, 69, 0, 0.3);
-  --glow-green:   0 0 30px -8px rgba(0, 255, 136, 0.3);
-  --glow-cyan:    0 0 30px -8px rgba(0, 212, 255, 0.3);
-  --glow-pink:    0 0 30px -8px rgba(255, 0, 255, 0.3);
-  --glow-yellow:  0 0 30px -8px rgba(255, 230, 0, 0.3);
-
-  /* Border radius scale */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
 }
-
-/* ──────────── Global Styles ──────────── */
 
 * {
   box-sizing: border-box;
@@ -73,60 +50,96 @@ body {
   min-height: 100vh;
 }
 
-/* ──────────── Custom Utility Layers ──────────── */
-
 @layer utilities {
-  /* Glass morphism card */
-  .glass {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: var(--glass-shadow);
+  .shadow-border {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  .shadow-border-hover {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  .shadow-border-active {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  }
+  .shadow-divider {
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04);
   }
 
-  /* Glow variants */
-  .glow-orange {
-    box-shadow: var(--glow-orange);
+  .text-display-xl {
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -1.92px;
+    line-height: 1;
   }
-  .glow-green {
-    box-shadow: var(--glow-green);
+  .text-display {
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: -1.44px;
+    line-height: 1.1;
   }
-  .glow-cyan {
-    box-shadow: var(--glow-cyan);
+  .text-heading {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.48px;
+    line-height: 1.25;
   }
-  .glow-pink {
-    box-shadow: var(--glow-pink);
+  .text-subheading {
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.18px;
+    line-height: 1.4;
   }
-  .glow-yellow {
-    box-shadow: var(--glow-yellow);
+  .text-body {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+  .text-caption {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .text-small {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+  .text-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+  .text-mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
   }
 
-  /* Orange glow on hover */
-  .glow-hover {
-    transition: box-shadow 0.3s ease;
+  .surface-1 {
+    background-color: #09090b;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
   }
-  .glow-hover:hover {
-    box-shadow: var(--glow-orange);
+  .surface-2 {
+    background-color: #18181b;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
   }
-
-  /* Orange accent text */
-  .text-accent {
-    color: #FF4500;
+  .surface-3 {
+    background-color: #27272a;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
   }
-  .text-accent-secondary {
-    color: #00FF88;
-  }
-  .text-accent-tertiary {
-    color: #00D4FF;
-  }
-
-  /* Orange accent border */
-  .border-accent {
-    border-color: #FF4500;
+  .surface-1:hover,
+  .surface-2:hover,
+  .surface-3:hover {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
-  /* Subtle grid background pattern */
+  .text-gradient-brand {
+    background: linear-gradient(135deg, #FF4500, #FF6A33);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   .bg-grid {
     background-image:
       linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
@@ -134,16 +147,38 @@ body {
     background-size: 64px 64px;
   }
 
-  /* Gradient text */
-  .text-gradient-orange {
-    background: linear-gradient(135deg, #FF4500, #FF6B35);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      #09090b 25%,
+      #18181b 50%,
+      #09090b 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .animate-in {
+    animation: animateIn 0.2s ease-out;
+  }
+  @keyframes animateIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-in-from-right {
+    animation: slideInRight 0.25s ease-out;
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 }
-
-/* ──────────── Scrollbar ──────────── */
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -160,14 +195,10 @@ body {
   background: #3f3f46;
 }
 
-/* ──────────── Selection ──────────── */
-
 ::selection {
   background: rgba(255, 69, 0, 0.3);
   color: #ffffff;
 }
-
-/* ──────────── Focus Ring ──────────── */
 
 :focus-visible {
   outline: 2px solid rgba(255, 69, 0, 0.5);

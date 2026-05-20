@@ -12,10 +12,10 @@ interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const sizeMap = {
-  sm: 'h-8 w-8 text-xs',
-  md: 'h-10 w-10 text-sm',
-  lg: 'h-14 w-14 text-base',
-  xl: 'h-20 w-20 text-xl',
+  sm: 'h-8 w-8 text-small',
+  md: 'h-10 w-10 text-body',
+  lg: 'h-14 w-14 text-heading',
+  xl: 'h-20 w-20 text-display',
 }
 
 const statusDotSize = {
@@ -26,9 +26,9 @@ const statusDotSize = {
 }
 
 const statusColors = {
-  online: 'bg-[#00FF88]',
+  online: 'bg-green',
   offline: 'bg-zinc-600',
-  away: 'bg-[#FFE600]',
+  away: 'bg-yellow',
 }
 
 const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
@@ -47,7 +47,7 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
             'flex items-center justify-center rounded-full overflow-hidden',
             sizeMap[size],
             !src || imgError
-              ? 'bg-gradient-to-br from-[#FF4500]/30 to-zinc-800 text-zinc-300 font-semibold'
+              ? 'bg-gradient-to-br from-brand/30 to-zinc-800 text-zinc-300 font-semibold'
               : '',
           )}
         >

@@ -5,22 +5,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+  'inline-flex items-center rounded-full px-2.5 py-0.5 text-small font-medium transition-colors',
   {
     variants: {
       variant: {
-        default: 'bg-zinc-800 text-zinc-300 border border-zinc-700/50',
-        primary: 'bg-[#FF4500]/15 text-[#FF4500] border border-[#FF4500]/30',
-        green: 'bg-[#00FF88]/10 text-[#00FF88] border border-[#00FF88]/20',
-        cyan: 'bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20',
-        pink: 'bg-[#FF00FF]/10 text-[#FF00FF] border border-[#FF00FF]/20',
-        yellow: 'bg-[#FFE600]/10 text-[#FFE600] border border-[#FFE600]/20',
-        outline: 'bg-transparent text-zinc-400 border border-zinc-700',
+        default: 'bg-zinc-800 text-zinc-300',
+        primary: 'text-brand bg-brand/10',
+        green: 'text-green bg-green/10',
+        cyan: 'text-cyan bg-cyan/10',
+        pink: 'text-pink bg-pink/10',
+        yellow: 'text-yellow bg-yellow/10',
+        outline: 'bg-transparent text-zinc-400 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]',
       },
       size: {
-        sm: 'px-2 py-0.5 text-[10px]',
-        md: 'px-2.5 py-0.5 text-xs',
-        lg: 'px-3 py-1 text-sm',
+        sm: 'px-2 py-0.5 text-[11px]',
+        md: 'px-2.5 py-0.5 text-small',
+        lg: 'px-3 py-1 text-caption',
       },
     },
     defaultVariants: {
@@ -48,11 +48,11 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
           <span
             className={cn(
               'mr-1.5 h-1.5 w-1.5 rounded-full',
-              variant === 'primary' && 'bg-[#FF4500]',
-              variant === 'green' && 'bg-[#00FF88]',
-              variant === 'cyan' && 'bg-[#00D4FF]',
-              variant === 'pink' && 'bg-[#FF00FF]',
-              variant === 'yellow' && 'bg-[#FFE600]',
+              variant === 'primary' && 'bg-brand',
+              variant === 'green' && 'bg-green',
+              variant === 'cyan' && 'bg-cyan',
+              variant === 'pink' && 'bg-pink',
+              variant === 'yellow' && 'bg-yellow',
               (!variant || variant === 'default') && 'bg-zinc-400',
             )}
           />

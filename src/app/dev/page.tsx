@@ -1,24 +1,23 @@
 'use client'
 
-import { useState, useMemo, useSyncExternalStore } from 'react'
+import { useState, useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { DataStore, closeGig, devs } from '@/lib/data'
-import { Gig } from '@/lib/types'
+import { DataStore, closeGig } from '@/lib/data'
+import type { Gig } from '@/lib/types'
 import {
   cn,
   formatCurrency,
   timeAgo,
   getGameIcon,
   getStatusColor,
-  getStatusBg,
   getPayoutLabel,
-  getPlatformLabel,
   formatNumber,
 } from '@/lib/utils'
 import {
@@ -28,22 +27,16 @@ import {
   Star,
   Zap,
   Plus,
-  ArrowUpRight,
   Sparkles,
   Eye,
   XCircle,
   Clock,
   Gamepad2,
   Lightbulb,
-  Rocket,
   BarChart3,
-  ExternalLink,
+  Loader2,
 } from 'lucide-react'
 
-/* ────────── Mock "current dev" ────────── */
-const currentDev = devs[0] // NeonForge
-
-/* ────────── Quick Start Guide ────────── */
 const quickStartSteps = [
   { icon: <Gamepad2 className="h-5 w-5" />, title: 'Post a Gig', desc: 'Describe your game, set budget & requirements.' },
   { icon: <Users className="h-5 w-5" />, title: 'Review Streamers', desc: 'Browse profiles, vibe scores, and past work.' },
@@ -52,20 +45,20 @@ const quickStartSteps = [
 
 function QuickStartGuide() {
   return (
-    <Card glass glow className="p-6">
+    <Card className="p-6">
       <div className="mb-4 flex items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-[#FFE600]" />
-        <h3 className="text-sm font-bold text-zinc-100">Quick Start Guide</h3>
+        <Lightbulb className="h-5 w-5 text-yellow" />
+        <h3 className="text-caption font-bold text-zinc-50">Quick Start Guide</h3>
       </div>
       <div className="space-y-4">
         {quickStartSteps.map((step, i) => (
           <div key={i} className="flex gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-zinc-400">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg surface-3 text-zinc-400">
               {step.icon}
             </div>
             <div>
-              <p className="text-sm font-medium text-zinc-100">{step.title}</p>
-              <p className="text-xs text-zinc-500">{step.desc}</p>
+              <p className="text-caption font-medium text-zinc-50">{step.title}</p>
+              <p className="text-small text-zinc-500">{step.desc}</p>
             </div>
           </div>
         ))}
@@ -81,37 +74,36 @@ function QuickStartGuide() {
   )
 }
 
-/* ────────── Gig Row ────────── */
 function GigRow({ gig, onView, onClose }: { gig: Gig; onView: () => void; onClose?: () => void }) {
   return (
-    <Card glass hover className="p-4">
+    <Card hover className="p-4">
       <div className="flex items-center gap-4">
         <span className="text-2xl shrink-0">{getGameIcon(gig.gameType)}</span>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <p className="text-sm font-semibold text-zinc-100 truncate">{gig.title}</p>
-            <span className={cn('text-xs font-medium', getStatusColor(gig.status))}>
-              ● {gig.status.replace('_', ' ')}
+            <p className="text-caption font-semibold text-zinc-50 truncate">{gig.title}</p>
+            <span className={cn('text-small font-medium', getStatusColor(gig.status))}>
+              &bull; {gig.status.replace('_', ' ')}
             </span>
           </div>
-          <div className="mt-0.5 flex items-center gap-3 text-xs text-zinc-500">
+          <div className="mt-0.5 flex items-center gap-3 text-small text-zinc-500">
             <span>{gig.game}</span>
-            <span>·</span>
-            <span>{getPlatformLabel(gig.platform)}</span>
-            <span>·</span>
+            <span>&middot;</span>
+            <span>{gig.platform === 'both' ? 'Twitch + YouTube' : gig.platform === 'twitch' ? 'Twitch' : 'YouTube'}</span>
+            <span>&middot;</span>
             <span>{timeAgo(gig.createdAt)}</span>
           </div>
         </div>
 
         <div className="hidden items-center gap-5 sm:flex">
           <div className="text-right">
-            <p className="text-sm font-bold text-zinc-100">{formatCurrency(gig.budget)}</p>
-            <p className="text-[10px] text-zinc-500">{getPayoutLabel(gig.payoutType)}</p>
+            <p className="text-caption font-bold text-zinc-50">{formatCurrency(gig.budget)}</p>
+            <p className="text-small text-zinc-500">{getPayoutLabel(gig.payoutType)}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-zinc-100">{gig.applicants}</p>
-            <p className="text-[10px] text-zinc-500">applicants</p>
+            <p className="text-caption font-bold text-zinc-50">{gig.applicants}</p>
+            <p className="text-small text-zinc-500">applicants</p>
           </div>
         </div>
 
@@ -132,17 +124,23 @@ function GigRow({ gig, onView, onClose }: { gig: Gig; onView: () => void; onClos
   )
 }
 
-/* ────────── Dev Dashboard ────────── */
 export default function DevDashboard() {
   const router = useRouter()
+  const { user, isLoading } = useAuth()
   const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/auth')
+    }
+  }, [user, isLoading, router])
 
   const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
   const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
 
-  // Gigs posted by this dev
   const myGigs = useMemo(() => {
-    let filtered = allGigs.filter(g => g.devId === currentDev.id)
+    if (!user) return []
+    let filtered = allGigs.filter(g => g.devId === user.id)
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
@@ -153,89 +151,123 @@ export default function DevDashboard() {
       )
     }
     return filtered
-  }, [allGigs, search])
+  }, [allGigs, search, user])
 
-  // Stats
-  const totalGigsPosted = allGigs.filter(g => g.devId === currentDev.id).length
-  const totalApplicants = allGigs
-    .filter(g => g.devId === currentDev.id)
-    .reduce((sum, g) => sum + g.applicants, 0)
-  const totalSpent = allGigs
-    .filter(g => g.devId === currentDev.id && (g.status === 'completed' || g.status === 'in_progress'))
-    .reduce((sum, g) => sum + g.budget, 0)
-  const avgRating = currentDev.rating
+  const totalGigsPosted = user ? allGigs.filter(g => g.devId === user.id).length : 0
+  const totalApplicants = user
+    ? allGigs
+        .filter(g => g.devId === user.id)
+        .reduce((sum, g) => sum + g.applicants, 0)
+    : 0
+  const totalSpent = user
+    ? allGigs
+        .filter(g => g.devId === user.id && (g.status === 'completed' || g.status === 'in_progress'))
+        .reduce((sum, g) => sum + g.budget, 0)
+    : 0
+  const avgRating = user?.rating ?? 0
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-brand" />
+          <p className="text-body text-zinc-500">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black">
+        <header className="shadow-divider sticky top-0 z-50 bg-black">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+            <Link href="/" className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-brand" />
+              <span className="text-caption font-bold text-zinc-50">Vibe</span>
+            </Link>
+          </div>
+        </header>
+        <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-6 pt-24 text-center">
+          <Gamepad2 className="mb-4 h-12 w-12 text-zinc-700" />
+          <h1 className="text-heading text-zinc-50">Dev Dashboard</h1>
+          <p className="mt-2 text-body text-zinc-500">Sign in or create an account to manage your gigs.</p>
+          <Link href="/auth">
+            <Button className="mt-6 gap-2">
+              <Sparkles className="h-4 w-4" /> Sign In
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black">
-      {/* ── Header ── */}
-      <header className="border-b border-white/5 bg-black/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="shadow-divider sticky top-0 z-50 bg-black">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#FF4500]" />
-            <span className="text-sm font-bold text-zinc-100">Vibe</span>
+            <Sparkles className="h-5 w-5 text-brand" />
+            <span className="text-caption font-bold text-zinc-50">Vibe</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/streamer">
               <Button variant="ghost" size="sm">Streamer Portal</Button>
             </Link>
-            <Avatar src={currentDev.avatar} name={currentDev.name} size="sm" />
+            <Avatar src={user.avatar} name={user.name} size="sm" />
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-6 py-8">
-        {/* ── Hero ── */}
         <div className="mb-8">
           <div className="flex items-center gap-4">
-            <Avatar src={currentDev.avatar} name={currentDev.name} size="xl" />
+            <Avatar src={user.avatar} name={user.name} size="xl" />
             <div>
-              <h1 className="text-2xl font-bold text-zinc-100">Dev Dashboard</h1>
-              <p className="text-sm text-zinc-500">{currentDev.name} · @{currentDev.handle}</p>
-              <p className="mt-1 text-xs text-zinc-600 max-w-lg">{currentDev.bio}</p>
+              <h1 className="text-heading text-zinc-50">Dev Dashboard</h1>
+              <p className="text-body text-zinc-500">{user.name} &middot; @{user.handle}</p>
+              <p className="mt-1 text-small text-zinc-600 max-w-lg">{user.bio}</p>
             </div>
           </div>
         </div>
 
-        {/* ── Stats ── */}
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Card glass className="p-4">
-            <div className="flex items-center gap-2 text-[#FF4500]">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 text-brand">
               <Gamepad2 className="h-4 w-4" />
-              <span className="text-xs text-zinc-500">Gigs Posted</span>
+              <span className="text-small text-zinc-500">Gigs Posted</span>
             </div>
-            <p className="mt-1 text-xl font-bold text-zinc-100">{totalGigsPosted}</p>
+            <p className="mt-1 text-heading text-zinc-50">{totalGigsPosted}</p>
           </Card>
-          <Card glass className="p-4">
-            <div className="flex items-center gap-2 text-[#00FF88]">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 text-green">
               <DollarSign className="h-4 w-4" />
-              <span className="text-xs text-zinc-500">Total Spent</span>
+              <span className="text-small text-zinc-500">Total Spent</span>
             </div>
-            <p className="mt-1 text-xl font-bold text-zinc-100">{formatCurrency(totalSpent)}</p>
+            <p className="mt-1 text-heading text-zinc-50">{formatCurrency(totalSpent)}</p>
           </Card>
-          <Card glass className="p-4">
-            <div className="flex items-center gap-2 text-[#00D4FF]">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 text-cyan">
               <Users className="h-4 w-4" />
-              <span className="text-xs text-zinc-500">Total Applicants</span>
+              <span className="text-small text-zinc-500">Total Applicants</span>
             </div>
-            <p className="mt-1 text-xl font-bold text-zinc-100">{totalApplicants}</p>
+            <p className="mt-1 text-heading text-zinc-50">{totalApplicants}</p>
           </Card>
-          <Card glass className="p-4">
-            <div className="flex items-center gap-2 text-[#FFE600]">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 text-yellow">
               <Star className="h-4 w-4" />
-              <span className="text-xs text-zinc-500">Rating</span>
+              <span className="text-small text-zinc-500">Rating</span>
             </div>
-            <p className="mt-1 text-xl font-bold text-zinc-100">{avgRating}</p>
+            <p className="mt-1 text-heading text-zinc-50">{avgRating}</p>
           </Card>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main Content - Gigs List */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-zinc-100">Your Gigs</h2>
-                <p className="text-xs text-zinc-500">Manage all your posted gigs in one place.</p>
+                <h2 className="text-heading text-zinc-50">Your Gigs</h2>
+                <p className="text-small text-zinc-500">Manage all your posted gigs in one place.</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative w-52">
@@ -244,7 +276,7 @@ export default function DevDashboard() {
                     placeholder="Search your gigs..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="pl-9 h-9 text-xs"
+                    className="pl-9 h-9 text-small"
                   />
                 </div>
                 <Link href="/dev/post">
@@ -255,14 +287,13 @@ export default function DevDashboard() {
               </div>
             </div>
 
-            {/* Gig List */}
             {myGigs.length === 0 ? (
-              <Card glass className="p-12 text-center">
+              <Card className="p-12 text-center">
                 <Gamepad2 className="mx-auto mb-4 h-10 w-10 text-zinc-700" />
-                <p className="text-zinc-400 font-medium">
+                <p className="text-caption text-zinc-400 font-medium">
                   {search ? 'No gigs match your search' : 'No gigs posted yet'}
                 </p>
-                <p className="mt-1 text-xs text-zinc-600">
+                <p className="mt-1 text-small text-zinc-600">
                   {search ? 'Try different keywords.' : 'Post your first gig and get streamers playing your game.'}
                 </p>
                 {!search && (
@@ -287,36 +318,34 @@ export default function DevDashboard() {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Quick Start or Summary */}
             {totalGigsPosted === 0 ? (
               <QuickStartGuide />
             ) : (
               <>
-                <Card glass>
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Rocket className="h-4 w-4 text-[#FF4500]" />
+                      <Zap className="h-4 w-4 text-brand" />
                       Summary
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                      <span className="text-xs text-zinc-500">Open Gigs</span>
-                      <span className="text-sm font-bold text-zinc-100">{myGigs.filter(g => g.status === 'open').length}</span>
+                    <div className="flex items-center justify-between shadow-divider pb-3">
+                      <span className="text-small text-zinc-500">Open Gigs</span>
+                      <span className="text-caption font-bold text-zinc-50">{myGigs.filter(g => g.status === 'open').length}</span>
                     </div>
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                      <span className="text-xs text-zinc-500">In Progress</span>
-                      <span className="text-sm font-bold text-zinc-100">{myGigs.filter(g => g.status === 'in_progress').length}</span>
+                    <div className="flex items-center justify-between shadow-divider pb-3">
+                      <span className="text-small text-zinc-500">In Progress</span>
+                      <span className="text-caption font-bold text-zinc-50">{myGigs.filter(g => g.status === 'in_progress').length}</span>
                     </div>
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                      <span className="text-xs text-zinc-500">Completed</span>
-                      <span className="text-sm font-bold text-zinc-100">{myGigs.filter(g => g.status === 'completed').length}</span>
+                    <div className="flex items-center justify-between shadow-divider pb-3">
+                      <span className="text-small text-zinc-500">Completed</span>
+                      <span className="text-caption font-bold text-zinc-50">{myGigs.filter(g => g.status === 'completed').length}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-500">Avg Budget</span>
-                      <span className="text-sm font-bold text-zinc-100">
+                      <span className="text-small text-zinc-500">Avg Budget</span>
+                      <span className="text-caption font-bold text-zinc-50">
                         {myGigs.length > 0 ? formatCurrency(Math.round(myGigs.reduce((s, g) => s + g.budget, 0) / myGigs.length)) : '$0'}
                       </span>
                     </div>
@@ -331,27 +360,26 @@ export default function DevDashboard() {
               </>
             )}
 
-            {/* Tips */}
-            <Card glass className="p-5">
+            <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="h-4 w-4 text-[#FFE600]" />
-                <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-wider">Tips</h3>
+                <Lightbulb className="h-4 w-4 text-yellow" />
+                <h3 className="text-label text-zinc-400">Tips</h3>
               </div>
-              <ul className="space-y-2 text-xs text-zinc-500">
+              <ul className="space-y-2 text-small text-zinc-500">
                 <li className="flex gap-2">
-                  <span className="text-[#FF4500]">→</span>
+                  <span className="text-brand">&rarr;</span>
                   Include specific requirements for better applicants
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-[#FF4500]">→</span>
+                  <span className="text-brand">&rarr;</span>
                   Streamers with 80+ vibe score are top performers
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-[#FF4500]">→</span>
+                  <span className="text-brand">&rarr;</span>
                   Respond to applications within 48 hours
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-[#FF4500]">→</span>
+                  <span className="text-brand">&rarr;</span>
                   Per-viewer payouts attract the most applicants
                 </li>
               </ul>
