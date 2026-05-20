@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { streamers, gigs, applications } from '@/lib/data'
+import { DataStore, streamers } from '@/lib/data'
 import {
   cn,
   formatCurrency,
@@ -217,19 +217,22 @@ export default function StreamerDashboard() {
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
+  const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
+  const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
+
   // Compute stats
-  const completedGigs = gigs.filter(g => g.status === 'completed')
-  const streamerApps = applications.filter(a => a.streamerId === currentStreamer.id)
+  const completedGigs = allGigs.filter(g => g.status === 'completed')
+  const streamerApps = allApps.filter(a => a.streamerId === currentStreamer.id)
   const acceptedApps = streamerApps.filter(a => a.status === 'accepted')
   const completedApps = streamerApps.filter(a => a.status === 'completed')
   const totalEarnings = completedApps.reduce((sum, app) => {
-    const g = gigs.find(g => g.id === app.gigId)
+    const g = allGigs.find(g => g.id === app.gigId)
     return sum + (g?.budget ?? 0)
   }, 0)
 
   // Filter gigs
   const openGigs = useMemo(() => {
-    let filtered = gigs.filter(g => g.status === 'open')
+    let filtered = allGigs.filter(g => g.status === 'open')
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
@@ -241,7 +244,7 @@ export default function StreamerDashboard() {
       )
     }
     return filtered
-  }, [search])
+  }, [allGigs, search])
 
   // Filter applications
   const filteredApps = useMemo(() => {
@@ -254,12 +257,12 @@ export default function StreamerDashboard() {
     if (search) {
       const q = search.toLowerCase()
       apps = apps.filter(a => {
-        const g = gigs.find(g => g.id === a.gigId)
+        const g = allGigs.find(g => g.id === a.gigId)
         return g?.title.toLowerCase().includes(q) || g?.game.toLowerCase().includes(q)
       })
     }
     return apps
-  }, [activeTab, search, streamerApps])
+  }, [activeTab, search, streamerApps, allGigs])
 
   return (
     <div className="min-h-screen bg-black">
@@ -324,7 +327,7 @@ export default function StreamerDashboard() {
               <Zap className="h-4 w-4" />
               <span className="text-xs text-zinc-500">Gigs Available</span>
             </div>
-            <p className="mt-1 text-xl font-bold text-zinc-100">{gigs.filter(g => g.status === 'open').length}</p>
+            <p className="mt-1 text-xl font-bold text-zinc-100">{allGigs.filter(g => g.status === 'open').length}</p>
           </Card>
         </div>
 
@@ -418,7 +421,7 @@ export default function StreamerDashboard() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {filteredApps.map(app => (
-                  <ApplicationCard key={app.id} app={app} gig={gigs.find(g => g.id === app.gigId)} />
+                  <ApplicationCard key={app.id} app={app} gig={allGigs.find(g => g.id === app.gigId)} />
                 ))}
               </div>
             )}
@@ -436,7 +439,7 @@ export default function StreamerDashboard() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {filteredApps.map(app => (
-                  <ApplicationCard key={app.id} app={app} gig={gigs.find(g => g.id === app.gigId)} />
+                  <ApplicationCard key={app.id} app={app} gig={allGigs.find(g => g.id === app.gigId)} />
                 ))}
               </div>
             )}

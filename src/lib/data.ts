@@ -306,6 +306,53 @@ export const devs: User[] = [
   },
 ]
 
+/* ────────── Reactive DataStore ────────── */
+type Listener = () => void
+const _listeners = new Set<Listener>()
+
+export const DataStore = {
+  subscribe: (listener: Listener): (() => void) => {
+    _listeners.add(listener)
+    return () => _listeners.delete(listener)
+  },
+  notify: () => {
+    _listeners.forEach(l => l())
+  },
+  getGigs: (): Gig[] => gigs,
+  getApplications: (): Application[] => applications,
+  getStreamers: (): User[] => streamers,
+  getDevs: (): User[] => devs,
+  // Required for useSyncExternalStore SSR — returns same initial data
+  getServerSnapshot: (): Gig[] => gigs,
+  getAppServerSnapshot: (): Application[] => applications,
+}
+
+export function addGig(gig: Gig) {
+  gigs.push(gig)
+  DataStore.notify()
+}
+
+export function addApplication(app: Application) {
+  applications.push(app)
+  DataStore.notify()
+}
+
+export function updateApplicationStatus(appId: string, status: Application['status']) {
+  const app = applications.find(a => a.id === appId)
+  if (app) {
+    app.status = status
+    DataStore.notify()
+  }
+}
+
+export function closeGig(gigId: string) {
+  const gig = gigs.find(g => g.id === gigId)
+  if (gig) {
+    gig.status = 'cancelled'
+    DataStore.notify()
+  }
+}
+
 export const gigs: Gig[] = [
   {
     id: 'g1',

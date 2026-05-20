@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { devs, gigs, applications } from '@/lib/data'
+import { DataStore, closeGig, devs } from '@/lib/data'
+import { Gig } from '@/lib/types'
 import {
   cn,
   formatCurrency,
@@ -38,7 +39,6 @@ import {
   BarChart3,
   ExternalLink,
 } from 'lucide-react'
-import type { Gig } from '@/lib/types'
 
 /* ────────── Mock "current dev" ────────── */
 const currentDev = devs[0] // NeonForge
@@ -82,8 +82,7 @@ function QuickStartGuide() {
 }
 
 /* ────────── Gig Row ────────── */
-function GigRow({ gig, onView }: { gig: Gig; onView: () => void }) {
-  const appCount = applications.filter(a => a.gigId === gig.id).length
+function GigRow({ gig, onView, onClose }: { gig: Gig; onView: () => void; onClose?: () => void }) {
   return (
     <Card glass hover className="p-4">
       <div className="flex items-center gap-4">
@@ -111,7 +110,7 @@ function GigRow({ gig, onView }: { gig: Gig; onView: () => void }) {
             <p className="text-[10px] text-zinc-500">{getPayoutLabel(gig.payoutType)}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-zinc-100">{appCount}</p>
+            <p className="text-sm font-bold text-zinc-100">{gig.applicants}</p>
             <p className="text-[10px] text-zinc-500">applicants</p>
           </div>
         </div>
@@ -122,7 +121,7 @@ function GigRow({ gig, onView }: { gig: Gig; onView: () => void }) {
             <span className="hidden sm:inline">View</span>
           </Button>
           {gig.status === 'open' && (
-            <Button size="sm" variant="ghost" className="gap-1 text-red-400 hover:text-red-300">
+            <Button size="sm" variant="ghost" className="gap-1 text-red-400 hover:text-red-300" onClick={onClose}>
               <XCircle className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Close</span>
             </Button>
@@ -138,9 +137,12 @@ export default function DevDashboard() {
   const router = useRouter()
   const [search, setSearch] = useState('')
 
+  const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
+  const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
+
   // Gigs posted by this dev
   const myGigs = useMemo(() => {
-    let filtered = gigs.filter(g => g.devId === currentDev.id)
+    let filtered = allGigs.filter(g => g.devId === currentDev.id)
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
@@ -151,14 +153,14 @@ export default function DevDashboard() {
       )
     }
     return filtered
-  }, [search])
+  }, [allGigs, search])
 
   // Stats
-  const totalGigsPosted = gigs.filter(g => g.devId === currentDev.id).length
-  const totalApplicants = gigs
+  const totalGigsPosted = allGigs.filter(g => g.devId === currentDev.id).length
+  const totalApplicants = allGigs
     .filter(g => g.devId === currentDev.id)
     .reduce((sum, g) => sum + g.applicants, 0)
-  const totalSpent = gigs
+  const totalSpent = allGigs
     .filter(g => g.devId === currentDev.id && (g.status === 'completed' || g.status === 'in_progress'))
     .reduce((sum, g) => sum + g.budget, 0)
   const avgRating = currentDev.rating
@@ -278,6 +280,7 @@ export default function DevDashboard() {
                     key={gig.id}
                     gig={gig}
                     onView={() => router.push(`/gig/${gig.id}?dev=true`)}
+                    onClose={() => closeGig(gig.id)}
                   />
                 ))}
               </div>

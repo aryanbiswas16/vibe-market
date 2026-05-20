@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
-import { gigs, applications } from '@/lib/data'
+import { DataStore } from '@/lib/data'
 import { cn, formatCurrency, timeAgo, getGameIcon, getStatusColor, getStatusBg, getPayoutLabel, getPlatformLabel } from '@/lib/utils'
 import { ArrowRight, Sparkles, Gamepad2, DollarSign, Users, Star, Zap, ChevronRight, Quote, Rocket, Trophy, HeartHandshake } from 'lucide-react'
 import type { Gig } from '@/lib/types'
@@ -46,6 +46,7 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
 
 /* ────────── Featured gigs carousel ────────── */
 function FeaturedGigs() {
+  const gigs = DataStore.getGigs()
   const openGigs = gigs.filter(g => g.status === 'open').slice(0, 6)
   return (
     <section className="relative py-24">
@@ -280,14 +281,24 @@ function HowItWorks() {
 }
 
 /* ────────── Stats bar ────────── */
-const stats = [
-  { value: '$120K+', label: 'Paid to Streamers', icon: DollarSign },
-  { value: '1,200+', label: 'Gigs Completed', icon: Zap },
-  { value: '500+', label: 'Active Streamers', icon: Users },
-  { value: '4.8★', label: 'Average Rating', icon: Star },
-]
-
 function StatsBar() {
+  const gigs = DataStore.getGigs()
+  const totalGigBudgets = gigs.reduce((sum, g) => sum + g.budget, 0)
+  const completedGigs = gigs.filter(g => g.status === 'completed').length
+  const allRatings = [...new Set([...gigs.map(g => {
+    const dev = DataStore.getDevs().find(d => d.id === g.devId)
+    return dev?.rating ?? 0
+  })])]
+  const avgRating = allRatings.length > 0
+    ? (allRatings.reduce((s, r) => s + r, 0) / allRatings.length).toFixed(1)
+    : '4.8'
+
+  const stats = [
+    { value: `${formatCurrency(totalGigBudgets)}+`, label: 'Paid to Streamers', icon: DollarSign },
+    { value: `${completedGigs}+`, label: 'Gigs Completed', icon: Zap },
+    { value: `${DataStore.getStreamers().length}+`, label: 'Active Streamers', icon: Users },
+    { value: `${avgRating}★`, label: 'Average Rating', icon: Star },
+  ]
   return (
     <section className="border-t border-white/5 py-16">
       <div className="mx-auto max-w-6xl px-6">

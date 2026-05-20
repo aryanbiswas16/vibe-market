@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input, Textarea, Select } from '@/components/ui/input'
-import { devs } from '@/lib/data'
+import { DataStore, addGig, devs } from '@/lib/data'
+import { Gig } from '@/lib/types'
 import {
   cn,
   formatCurrency,
@@ -149,7 +150,30 @@ export default function PostGigPage() {
   /* ── Submit ── */
   const handleSubmit = () => {
     if (validate()) {
+      const newGig = {
+        id: `g${Date.now()}`,
+        devId: 'd1',
+        devName: 'NeonForge',
+        devAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=neonforge',
+        title: form.title.trim(),
+        description: form.description.trim(),
+        game: form.game.trim(),
+        gameType: form.gameType as Gig['gameType'],
+        platform: form.platform as Gig['platform'],
+        budget: Number(form.budget),
+        payoutType: form.payoutType as Gig['payoutType'],
+        minFollowers: form.minFollowers ? Number(form.minFollowers) : undefined,
+        minAvgViewers: form.minAvgViewers ? Number(form.minAvgViewers) : undefined,
+        duration: form.duration.trim(),
+        scheduledDate: new Date(form.scheduledDate).toISOString(),
+        status: 'open' as const,
+        tags: form.tags,
+        applicants: 0,
+        createdAt: new Date().toISOString(),
+      }
+      addGig(newGig)
       setSubmitted(true)
+      router.push('/dev')
     }
   }
 

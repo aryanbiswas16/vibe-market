@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useMemo, useEffect, useSyncExternalStore } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/input'
-import { gigs, applications, streamers, devs } from '@/lib/data'
+import { DataStore, addApplication, updateApplicationStatus, streamers, devs } from '@/lib/data'
 import {
   cn,
   formatCurrency,
@@ -38,7 +38,7 @@ import {
   ChevronRight,
   Send,
 } from 'lucide-react'
-import type { Application } from '@/lib/types'
+import type { Application, Gig } from '@/lib/types'
 
 /* ────────── Gradient background per game type ────────── */
 const gameGradients: Record<string, string> = {
@@ -60,9 +60,11 @@ const gameAccents: Record<string, string> = {
 /* ────────── Apply Form ────────── */
 function ApplyForm({
   gigId,
+  gig,
   onClose,
 }: {
   gigId: string
+  gig: Gig
   onClose: () => void
 }) {
   const [message, setMessage] = useState('')
@@ -78,6 +80,24 @@ function ApplyForm({
       setError('Message must be at least 20 characters')
       return
     }
+    // Create the application
+    const now = new Date().toISOString()
+    const newApp = {
+      id: `app-${Date.now()}`,
+      gigId,
+      streamerId: 's1',
+      streamerName: 'LunaRae',
+      streamerAvatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=lunarae',
+      streamerFollowers: 12800,
+      streamerAvgViewers: 420,
+      message: message.trim(),
+      status: 'pending' as const,
+      appliedAt: now,
+    }
+    addApplication(newApp)
+    // Increment the gig's applicant count
+    gig.applicants++
+    DataStore.notify()
     setSubmitted(true)
     setError('')
   }
@@ -225,13 +245,7 @@ function ApplicantsSection({
                     size="sm"
                     variant="primary"
                     className="gap-1.5 text-xs"
-                    onClick={() => {
-                      const btn = document.getElementById(`accept-${app.id}`)
-                      if (btn) {
-                        btn.textContent = '✓ Accepted'
-                        btn.setAttribute('disabled', 'true')
-                      }
-                    }}
+                    onClick={() => updateApplicationStatus(app.id, 'accepted')}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Accept
@@ -240,13 +254,7 @@ function ApplicantsSection({
                     size="sm"
                     variant="ghost"
                     className="gap-1.5 text-xs text-red-400 hover:text-red-300"
-                    onClick={() => {
-                      const btn = document.getElementById(`reject-${app.id}`)
-                      if (btn) {
-                        btn.textContent = '✕ Rejected'
-                        btn.setAttribute('disabled', 'true')
-                      }
-                    }}
+                    onClick={() => updateApplicationStatus(app.id, 'rejected')}
                   >
                     <XCircle className="h-3.5 w-3.5" />
                     Reject
@@ -275,12 +283,26 @@ function ApplicantsSection({
 /* ────────── Gig Detail Page ────────── */
 export default function GigDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const gigId = params?.id as string
 
-  const gig = useMemo(() => gigs.find(g => g.id === gigId), [gigId])
-  const gigApps = useMemo(() => applications.filter(a => a.gigId === gigId), [gigId])
+  const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
+  const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
+
+  const gig = useMemo(() => allGigs.find(g => g.id === gigId), [allGigs, gigId])
+  const gigApps = useMemo(() => allApps.filter(a => a.gigId === gigId), [allApps, gigId])
   const [showApplyForm, setShowApplyForm] = useState(false)
   const [isDevView, setIsDevView] = useState(false)
+
+  // Check if s1 (LunaRae) has already applied
+  const hasApplied = useMemo(
+    () => allApps.some(a => a.gigId === gigId && a.streamerId === 's1'),
+    [allApps, gigId],
+  )
+  const existingApp = useMemo(
+    () => allApps.find(a => a.gigId === gigId && a.streamerId === 's1'),
+    [allApps, gigId],
+  )
 
   // Check for ?dev=true query param
   useEffect(() => {
@@ -458,16 +480,24 @@ export default function GigDetailPage() {
 
             {/* Apply Form */}
             {showApplyForm ? (
-              <ApplyForm gigId={gig.id} onClose={() => setShowApplyForm(false)} />
+              <ApplyForm gigId={gig.id} gig={gig} onClose={() => setShowApplyForm(false)} />
             ) : (
-              gig.status === 'open' && (
+              gig.status === 'open' && !hasApplied && (
                 <Button size="lg" className="w-full gap-2" onClick={() => setShowApplyForm(true)}>
                   <Send className="h-5 w-5" /> Apply Now
                 </Button>
               )
             )}
 
-            {gig.status !== 'open' && !showApplyForm && (
+            {hasApplied && !showApplyForm && (
+              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-6 text-center backdrop-blur-xl">
+                <Badge variant={existingApp?.status === 'accepted' ? 'green' : existingApp?.status === 'rejected' ? 'default' : 'primary'} size="lg">
+                  {existingApp?.status === 'accepted' ? '✅ Accepted!' : existingApp?.status === 'rejected' ? '❌ Rejected' : '✓ Already Applied'}
+                </Badge>
+              </div>
+            )}
+
+            {gig.status !== 'open' && !showApplyForm && !hasApplied && (
               <div className="rounded-xl border border-white/5 bg-white/[0.03] p-6 text-center backdrop-blur-xl">
                 <Badge variant={gig.status === 'completed' ? 'yellow' : 'default'} size="lg">
                   {gig.status === 'completed' ? '🎉 This gig is completed' : gig.status === 'in_progress' ? '🔄 In progress' : '🚫 Cancelled'}
