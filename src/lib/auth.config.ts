@@ -8,6 +8,7 @@ import type { NextAuthConfig } from "next-auth"
 
 export const authOptions: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/auth",

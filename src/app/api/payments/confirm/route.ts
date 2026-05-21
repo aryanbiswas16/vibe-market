@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/prisma"
-import { stripe } from "@/lib/stripe"
+import { getStripe } from "@/lib/stripe"
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 import { z } from "zod"
 
@@ -23,6 +23,8 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const data = schema.parse(body)
+
+    const stripe = getStripe()
 
     // Retrieve the PaymentIntent from Stripe to verify status
     const paymentIntent = await stripe.paymentIntents.retrieve(data.paymentIntentId)

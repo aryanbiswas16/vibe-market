@@ -1,32 +1,61 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
+import { Avatar } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Avatar } from '@/components/ui/avatar'
 import { getGigs } from '@/lib/api-client'
-import { getMe } from '@/lib/api-client'
-import { cn, formatCurrency, timeAgo, getGameIcon } from '@/lib/utils'
-import { ArrowRight, Sparkles, Gamepad2, DollarSign, Users, Star, Zap, ChevronRight, Quote, Rocket, Trophy, HeartHandshake } from 'lucide-react'
+import { cn, formatCurrency, getGameIcon } from '@/lib/utils'
 import type { Gig } from '@/lib/types'
+import {
+  ArrowRight,
+  BarChart3,
+  BriefcaseBusiness,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  CreditCard,
+  DollarSign,
+  Filter,
+  Gamepad2,
+  HeartHandshake,
+  MessageSquare,
+  PlayCircle,
+  Quote,
+  Radio,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Trophy,
+  Users,
+  Zap,
+} from 'lucide-react'
 
 function useInView() {
   const [ref, setRef] = useState<HTMLElement | null>(null)
   const [inView, setInView] = useState(false)
-  const callbackRef = useCallback((node: HTMLElement | null) => {
-    setRef(node)
-  }, [])
+  const callbackRef = useCallback((node: HTMLElement | null) => setRef(node), [])
+
   useEffect(() => {
     if (!ref) return
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect() } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          obs.disconnect()
+        }
+      },
       { threshold: 0.1 },
     )
     obs.observe(ref)
     return () => obs.disconnect()
   }, [ref])
+
   return { ref: callbackRef, inView }
 }
 
@@ -35,15 +64,151 @@ function FadeIn({ children, delay = 0, className }: { children: React.ReactNode;
   return (
     <div
       ref={ref}
-      className={cn(
-        'transition-all duration-700',
-        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8',
-        className,
-      )}
+      className={cn('transition-all duration-700', inView ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0', className)}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
     </div>
+  )
+}
+
+const marketplaceHighlights = [
+  { icon: BriefcaseBusiness, label: 'Open gigs', value: '128' },
+  { icon: Radio, label: 'Live creators', value: '4.8K' },
+  { icon: ShieldCheck, label: 'Escrow-ready', value: '100%' },
+  { icon: MessageSquare, label: 'Avg reply', value: '< 6h' },
+]
+
+const heroGigs = [
+  { title: 'Roblox horror launch stream', game: 'Roblox', budget: '$450', meta: '8 applicants', tone: 'green' },
+  { title: 'Fortnite UEFN map spotlight', game: 'Fortnite', budget: '$300', meta: '12 applicants', tone: 'cyan' },
+  { title: 'Steam Next Fest demo run', game: 'Steam', budget: '$650', meta: '5 applicants', tone: 'yellow' },
+]
+
+function MarketplaceHero() {
+  return (
+    <section className="relative overflow-hidden border-b border-white/[0.06] bg-black">
+      <Image
+        src="/marketplace-hero.png"
+        alt="Marketplace dashboard preview for game creators hiring streamers"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover opacity-35"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#000_0%,rgba(0,0,0,0.88)_38%,rgba(0,0,0,0.48)_72%,#000_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,rgba(0,0,0,0.68)_88%,#000_100%)]" />
+
+      <div className="relative z-10 mx-auto grid min-h-[86vh] max-w-7xl items-center gap-10 px-6 py-10 lg:grid-cols-[0.96fr_1.04fr] lg:py-14">
+        <div className="max-w-2xl">
+          <FadeIn>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-950/80 px-3 py-1.5 backdrop-blur">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green" />
+              <span className="text-small font-medium text-zinc-300">Streamer creator marketplace</span>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={100}>
+            <h1 className="mt-7 max-w-2xl text-[48px] font-semibold leading-[0.98] tracking-normal text-zinc-50 sm:text-[64px] lg:text-[76px]">
+              Hire streamers. Launch games. Pay for real play.
+            </h1>
+          </FadeIn>
+
+          <FadeIn delay={200}>
+            <p className="mt-6 max-w-xl text-body text-zinc-300 sm:text-[17px]">
+              Vibe is a paid gig marketplace where game creators post campaigns and streamers apply with audience fit, platform stats, and clear payout terms.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={300}>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/streamer">
+                <Button size="lg" className="w-full gap-2 sm:w-auto">
+                  <Trophy className="h-5 w-5" />
+                  Browse Gigs
+                </Button>
+              </Link>
+              <Link href="/dev/post">
+                <Button variant="secondary" size="lg" className="w-full gap-2 sm:w-auto">
+                  <Gamepad2 className="h-5 w-5" />
+                  Post a Gig
+                </Button>
+              </Link>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={400}>
+            <div className="mt-9 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+              {marketplaceHighlights.map((item) => (
+                <div key={item.label} className="rounded-lg border border-white/[0.06] bg-zinc-950/70 p-3 backdrop-blur">
+                  <item.icon className="mb-2 h-4 w-4 text-brand" />
+                  <p className="text-caption font-semibold text-zinc-50">{item.value}</p>
+                  <p className="mt-0.5 text-small text-zinc-500">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+
+        <FadeIn delay={250}>
+          <div className="relative ml-auto w-full max-w-[560px] rounded-xl border border-white/[0.08] bg-zinc-950/86 p-4 shadow-2xl shadow-black/50 backdrop-blur-md">
+            <div className="mb-4 flex items-center justify-between border-b border-white/[0.06] pb-3">
+              <div>
+                <p className="text-label text-zinc-500">Marketplace Pulse</p>
+                <p className="mt-1 text-caption font-semibold text-zinc-50">Live paid campaigns</p>
+              </div>
+              <div className="flex items-center gap-2 rounded-md bg-green/10 px-2.5 py-1 text-small font-medium text-green">
+                <Radio className="h-3.5 w-3.5" />
+                Open now
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {heroGigs.map((gig) => (
+                <div key={gig.title} className="rounded-lg border border-white/[0.06] bg-black/40 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <PlayCircle
+                          className={cn(
+                            'h-4 w-4',
+                            gig.tone === 'green' && 'text-green',
+                            gig.tone === 'cyan' && 'text-cyan',
+                            gig.tone === 'yellow' && 'text-yellow',
+                          )}
+                        />
+                        <p className="text-caption font-semibold text-zinc-50">{gig.title}</p>
+                      </div>
+                      <p className="mt-1 text-small text-zinc-500">{gig.game} campaign</p>
+                    </div>
+                    <Badge variant="green" size="sm">{gig.budget}</Badge>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-small text-zinc-500">
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {gig.meta}</span>
+                    <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> This week</span>
+                    <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> Fixed</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {[
+                { label: 'Creator fit', value: '92%', icon: CheckCircle2 },
+                { label: 'Avg budget', value: '$420', icon: DollarSign },
+                { label: 'Filtered', value: '34', icon: Filter },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg bg-zinc-900/80 p-3">
+                  <item.icon className="mb-2 h-4 w-4 text-zinc-400" />
+                  <p className="text-caption font-semibold text-zinc-50">{item.value}</p>
+                  <p className="text-small text-zinc-500">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
   )
 }
 
@@ -53,7 +218,7 @@ function FeaturedGigs() {
 
   useEffect(() => {
     getGigs({ status: 'open', limit: '6', sortBy: 'newest' })
-      .then(res => setOpenGigs(res.gigs as Gig[]))
+      .then((res) => setOpenGigs(res.gigs as Gig[]))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -62,65 +227,59 @@ function FeaturedGigs() {
     <section className="relative py-20 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <FadeIn>
-          <div className="mb-12 text-center">
-            <Badge variant="primary" className="mb-4">Live Now</Badge>
-            <h2 className="text-display text-zinc-50">Featured Gigs</h2>
-            <p className="mt-3 text-body text-zinc-500">Devs are posting paid gigs right now. Find your next stream.</p>
+          <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Badge variant="primary" className="mb-4">Live Marketplace</Badge>
+              <h2 className="text-display text-zinc-50">Featured Paid Gigs</h2>
+              <p className="mt-3 max-w-2xl text-body text-zinc-500">
+                A marketplace should show inventory quickly: budget, game, creator, applicant demand, and payout style.
+              </p>
+            </div>
+            <Link href="/streamer">
+              <Button variant="secondary" size="sm">
+                View All <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </FadeIn>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-48 animate-pulse rounded-xl surface-2" />
-            ))
+            Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-56 animate-pulse rounded-xl surface-2" />)
           ) : openGigs.length === 0 ? (
-            <div className="col-span-full text-center py-12">
+            <Card className="col-span-full p-12 text-center">
               <p className="text-body text-zinc-500">No open gigs available right now.</p>
-            </div>
+            </Card>
           ) : (
             openGigs.slice(0, 6).map((gig, i) => (
-              <FadeIn key={gig.id} delay={i * 100}>
+              <FadeIn key={gig.id} delay={i * 80}>
                 <Link href={`/gig/${gig.id}`} className="group block">
                   <Card hover className="h-full">
-                    <CardContent className="flex flex-col gap-4 p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{getGameIcon(gig.gameType)}</span>
-                          <div>
-                            <p className="text-caption font-semibold text-zinc-50 group-hover:text-brand transition-colors line-clamp-1">
-                              {gig.title}
-                            </p>
+                    <CardContent className="flex h-full flex-col gap-4 p-6">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="shrink-0 text-2xl">{getGameIcon(gig.gameType)}</span>
+                          <div className="min-w-0">
+                            <p className="line-clamp-1 text-caption font-semibold text-zinc-50 transition-colors group-hover:text-brand">{gig.title}</p>
                             <p className="text-small text-zinc-500">{gig.game}</p>
                           </div>
                         </div>
                         <Badge variant="green" size="sm">{formatCurrency(gig.budget)}</Badge>
                       </div>
 
-                      <p className="text-small text-zinc-500 line-clamp-2 leading-relaxed">{gig.description}</p>
+                      <p className="line-clamp-2 text-small leading-relaxed text-zinc-500">{gig.description}</p>
 
                       <div className="flex flex-wrap gap-1.5">
-                        {gig.tags.slice(0, 3).map(tag => (
-                          <Badge key={tag} variant="outline" size="sm">{tag}</Badge>
-                        ))}
-                        {gig.tags.length > 3 && (
-                          <Badge variant="outline" size="sm">+{gig.tags.length - 3}</Badge>
-                        )}
+                        <Badge variant={gig.gameType === 'fortnite' ? 'cyan' : gig.gameType === 'roblox' ? 'pink' : gig.gameType === 'minecraft' ? 'green' : 'primary'} size="sm">
+                          {gig.gameType}
+                        </Badge>
+                        {gig.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="outline" size="sm">{tag}</Badge>)}
                       </div>
 
-                      <div className="flex items-center justify-between shadow-divider pt-3 text-small text-zinc-500">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          <span>{gig.applicants} applicants</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          <span>{gig.payoutType === 'fixed' ? 'Fixed' : gig.payoutType === 'per_hour' ? 'Per Hour' : 'Per Viewer'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Zap className="h-3 w-3" />
-                          <span>{gig.duration}</span>
-                        </div>
+                      <div className="mt-auto grid grid-cols-3 gap-2 border-t border-white/[0.05] pt-4 text-small text-zinc-500">
+                        <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {gig.applicants}</span>
+                        <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> {gig.payoutType === 'fixed' ? 'Fixed' : gig.payoutType === 'per_hour' ? 'Hourly' : 'Viewer'}</span>
+                        <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> {gig.duration}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -129,16 +288,121 @@ function FeaturedGigs() {
             ))
           )}
         </div>
+      </div>
+    </section>
+  )
+}
 
-        <FadeIn delay={300}>
-          <div className="mt-12 text-center">
-            <Link href="/streamer">
-              <Button variant="secondary" size="lg">
-                View All Gigs <ChevronRight className="h-4 w-4" />
-              </Button>
-            </Link>
+const streamerSteps = [
+  { icon: Rocket, title: 'Browse Like a Marketplace', desc: 'Filter by game, platform, payout type, timing, and budget before committing to a campaign.' },
+  { icon: HeartHandshake, title: 'Apply With Context', desc: 'Send a pitch that includes fit, audience, and stream plan instead of negotiating in DMs.' },
+  { icon: DollarSign, title: 'Stream and Get Paid', desc: 'Complete the agreed play session and track fixed, hourly, or per-viewer payouts from one workspace.' },
+]
+
+const devSteps = [
+  { icon: Gamepad2, title: 'Post a Campaign', desc: 'Define the game, deliverables, creator requirements, budget, and preferred platforms in minutes.' },
+  { icon: Users, title: 'Compare Applicants', desc: 'Review streamer profiles by audience size, vibe score, past work, and game fit.' },
+  { icon: BarChart3, title: 'Track Results', desc: 'Keep applicants, status, spend, and campaign outcomes visible after the stream goes live.' },
+]
+
+function HowItWorks() {
+  return (
+    <section className="relative border-b border-white/[0.04] py-20 lg:py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <FadeIn>
+          <div className="mb-12 max-w-2xl">
+            <Badge variant="cyan" className="mb-4">Marketplace Workflow</Badge>
+            <h2 className="text-display text-zinc-50">Built for both sides of paid game discovery</h2>
+            <p className="mt-3 text-body text-zinc-500">
+              Streamers need trustworthy gigs. Game creators need qualified applicants. The interface should make both jobs obvious.
+            </p>
           </div>
         </FadeIn>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {[
+            { title: 'For Streamers', subtitle: 'Find paid games worth streaming', icon: Trophy, color: 'text-brand', steps: streamerSteps, cta: 'Start Browsing', href: '/streamer' },
+            { title: 'For Game Creators', subtitle: 'Hire creators who match the game', icon: Gamepad2, color: 'text-cyan', steps: devSteps, cta: 'Post a Gig', href: '/dev/post' },
+          ].map((group, index) => (
+            <FadeIn key={group.title} delay={index * 120}>
+              <Card className="h-full p-7">
+                <div className="mb-7 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg surface-3">
+                    <group.icon className={cn('h-5 w-5', group.color)} />
+                  </div>
+                  <div>
+                    <h3 className="text-subheading text-zinc-50">{group.title}</h3>
+                    <p className="text-small text-zinc-500">{group.subtitle}</p>
+                  </div>
+                </div>
+                <div className="space-y-5">
+                  {group.steps.map((step) => (
+                    <div key={step.title} className="flex gap-4">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-zinc-400 shadow-border">
+                        <step.icon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-caption font-semibold text-zinc-50">{step.title}</p>
+                        <p className="mt-1 text-small leading-relaxed text-zinc-500">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Link href={group.href}>
+                  <Button variant={index === 0 ? 'primary' : 'secondary'} className="mt-8 w-full">
+                    {group.cta} <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </Card>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function StatsBar() {
+  const [stats, setStats] = useState([
+    { value: '$---', label: 'Marketplace budget', icon: DollarSign },
+    { value: '---', label: 'Completed gigs', icon: Zap },
+    { value: '---', label: 'Active streamers', icon: Users },
+    { value: '---', label: 'Avg rating', icon: Star },
+  ])
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const gigsRes = await getGigs({ limit: '100' })
+        const allGigs = gigsRes.gigs as Gig[]
+        const totalGigBudgets = allGigs.reduce((sum, gig) => sum + gig.budget, 0)
+        const completedGigs = allGigs.filter((gig) => gig.status === 'completed').length
+
+        setStats([
+          { value: `${formatCurrency(totalGigBudgets)}+`, label: 'Marketplace budget', icon: DollarSign },
+          { value: `${completedGigs}+`, label: 'Completed gigs', icon: Zap },
+          { value: '10+', label: 'Active streamers', icon: Users },
+          { value: '4.8', label: 'Avg rating', icon: Star },
+        ])
+      } catch {}
+    }
+    load()
+  }, [])
+
+  return (
+    <section className="py-14 lg:py-16">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {stats.map((stat, i) => (
+            <FadeIn key={stat.label} delay={i * 80}>
+              <Card className="p-5">
+                <stat.icon className="mb-4 h-5 w-5 text-brand" />
+                <p className="text-heading text-zinc-50">{stat.value}</p>
+                <p className="mt-1 text-small text-zinc-500">{stat.label}</p>
+              </Card>
+            </FadeIn>
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -146,19 +410,19 @@ function FeaturedGigs() {
 
 const testimonials = [
   {
-    quote: 'Vibe completely changed how we launch games. Got 12 streamers for our Roblox launch in 48 hours.',
+    quote: 'Vibe changed how we launch games. We filled a Roblox playtest slate in 48 hours and knew exactly who was streaming.',
     name: 'NeonForge',
     role: 'Dev Studio',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=neonforge',
   },
   {
-    quote: 'Made $2K last month just playing Fortnite maps for devs. This platform is cracked.',
+    quote: 'The gigs are clear before I apply: payout, platform, game, and what the creator actually needs from my stream.',
     name: 'LunaRae',
     role: 'Streamer',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=lunarae',
   },
   {
-    quote: 'The vibe score system is genius. It matches us with streamers who actually fit our game aesthetic.',
+    quote: 'The applicant view gives us enough signal to choose creators who fit the game instead of chasing follower count alone.',
     name: 'VoidInteractive',
     role: 'Horror Game Studio',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=voidinteractive',
@@ -170,18 +434,18 @@ function Testimonials() {
     <section className="relative py-20 lg:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <FadeIn>
-          <div className="mb-12 text-center">
-            <h2 className="text-display text-zinc-50">Trusted by the Scene</h2>
-            <p className="mt-3 text-body text-zinc-500">Real words from real users who get paid to play.</p>
+          <div className="mb-12 max-w-2xl">
+            <h2 className="text-display text-zinc-50">Signals that make the marketplace credible</h2>
+            <p className="mt-3 text-body text-zinc-500">The product tone is direct, operational, and focused on trust, speed, and game fit.</p>
           </div>
         </FadeIn>
 
         <div className="grid gap-5 md:grid-cols-3">
           {testimonials.map((t, i) => (
-            <FadeIn key={i} delay={i * 150}>
+            <FadeIn key={t.name} delay={i * 120}>
               <Card className="h-full p-6">
-                <Quote className="mb-4 h-8 w-8 text-brand/40" />
-                <p className="text-body leading-relaxed text-zinc-300 mb-6">&ldquo;{t.quote}&rdquo;</p>
+                <Quote className="mb-5 h-7 w-7 text-brand/45" />
+                <p className="mb-6 text-body leading-relaxed text-zinc-300">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-3">
                   <Avatar src={t.avatar} name={t.name} size="sm" />
                   <div>
@@ -189,152 +453,6 @@ function Testimonials() {
                     <p className="text-small text-zinc-500">{t.role}</p>
                   </div>
                 </div>
-              </Card>
-            </FadeIn>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-const streamerSteps = [
-  { icon: <Rocket className="h-6 w-6" />, title: 'Browse Gigs', desc: 'Scan paid gigs by game, budget, or vibe. Filter by Fortnite, Roblox, Minecraft, Steam, or any game.' },
-  { icon: <HeartHandshake className="h-6 w-6" />, title: 'Apply & Get Hired', desc: 'Send a quick pitch. Devs review your vibe score, followers, and avg viewers. Get accepted fast.' },
-  { icon: <DollarSign className="h-6 w-6" />, title: 'Stream & Get Paid', desc: 'Play the game, engage your chat, collect your payout. Fixed, per-hour, or per-viewer — your call.' },
-]
-
-const devSteps = [
-  { icon: <Gamepad2 className="h-6 w-6" />, title: 'Post a Gig', desc: 'Describe your game, set a budget, pick requirements. Takes 2 minutes.' },
-  { icon: <Users className="h-6 w-6" />, title: 'Review Applicants', desc: 'Browse streamer profiles, vibe scores, and past gigs. Pick the perfect fit for your game.' },
-  { icon: <Star className="h-6 w-6" />, title: 'Get Exposure', desc: 'Your game gets played live, clipped, and shared. Real audience, real engagement, real results.' },
-]
-
-function HowItWorks() {
-  return (
-    <section className="relative py-20 lg:py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <FadeIn>
-          <div className="mb-16 text-center">
-            <Badge variant="cyan" className="mb-4">How It Works</Badge>
-            <h2 className="text-display text-zinc-50">Two Sides, One Marketplace</h2>
-            <p className="mt-3 text-body text-zinc-500">Whether you stream or develop, Vibe connects you with your next opportunity.</p>
-          </div>
-        </FadeIn>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <FadeIn delay={100}>
-            <Card className="p-8">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg surface-3 text-brand">
-                  <Trophy className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-subheading text-zinc-50">For Streamers</h3>
-                  <p className="text-small text-zinc-500">Get paid to play the games you love</p>
-                </div>
-              </div>
-              <div className="space-y-6">
-                {streamerSteps.map((step, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg surface-3 text-zinc-400">
-                      {step.icon}
-                    </div>
-                    <div>
-                      <p className="text-caption font-semibold text-zinc-50">{step.title}</p>
-                      <p className="mt-1 text-small text-zinc-500 leading-relaxed">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-8">
-                <Link href="/auth">
-                  <Button className="w-full">
-                    I&apos;m a Streamer <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          </FadeIn>
-
-          <FadeIn delay={200}>
-            <Card className="p-8">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg surface-3 text-cyan">
-                  <Gamepad2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-subheading text-zinc-50">For Devs</h3>
-                  <p className="text-small text-zinc-500">Get your game played by real streamers</p>
-                </div>
-              </div>
-              <div className="space-y-6">
-                {devSteps.map((step, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg surface-3 text-zinc-400">
-                      {step.icon}
-                    </div>
-                    <div>
-                      <p className="text-caption font-semibold text-zinc-50">{step.title}</p>
-                      <p className="mt-1 text-small text-zinc-500 leading-relaxed">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-8">
-                <Link href="/auth">
-                  <Button variant="secondary" className="w-full">
-                    I&apos;m a Developer <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          </FadeIn>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function StatsBar() {
-  const [stats, setStats] = useState([
-    { value: '$---', label: 'Paid to Streamers', icon: DollarSign },
-    { value: '---', label: 'Gigs Completed', icon: Zap },
-    { value: '---', label: 'Active Streamers', icon: Users },
-    { value: '---', label: 'Average Rating', icon: Star },
-  ])
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const gigsRes = await getGigs({ limit: '100' })
-        const allGigs = gigsRes.gigs
-        const totalGigBudgets = allGigs.reduce((sum: number, g: any) => sum + g.budget, 0)
-        const completedGigs = allGigs.filter((g: any) => g.status === 'completed').length
-        const streamerCount = 10
-        const avgRating = '4.8'
-
-        setStats([
-          { value: `${formatCurrency(totalGigBudgets)}+`, label: 'Paid to Streamers', icon: DollarSign },
-          { value: `${completedGigs}+`, label: 'Gigs Completed', icon: Zap },
-          { value: `${streamerCount}+`, label: 'Active Streamers', icon: Users },
-          { value: `${avgRating}`, label: 'Average Rating', icon: Star },
-        ])
-      } catch {}
-    }
-    load()
-  }, [])
-
-  return (
-    <section className="py-16 lg:py-20">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {stats.map((stat, i) => (
-            <FadeIn key={i} delay={i * 100}>
-              <Card className="p-6 text-center">
-                <stat.icon className="mx-auto mb-3 h-6 w-6 text-brand" />
-                <p className="text-display text-zinc-50">{stat.value}</p>
-                <p className="mt-1 text-small text-zinc-500">{stat.label}</p>
               </Card>
             </FadeIn>
           ))}
@@ -376,37 +494,38 @@ function Footer() {
   ]
 
   return (
-    <footer className="shadow-divider py-16 lg:py-20">
+    <footer className="border-t border-white/[0.05] py-16 lg:py-20">
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="mb-4 flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-brand" />
               <span className="text-caption font-bold text-zinc-50">Vibe</span>
             </div>
-            <p className="text-small text-zinc-600 leading-relaxed max-w-xs">
-              The streamer marketplace where devs pay streamers to play their games.
-              Get paid to do what you love.
+            <p className="max-w-xs text-small leading-relaxed text-zinc-600">
+              A marketplace for game creators to hire streamers, and for streamers to find paid games worth playing.
             </p>
             <div className="mt-4 flex gap-3">
-              {['twitch', 'youtube', 'twitter', 'discord'].map((platform, i) => (
-                <span key={i} className="flex h-8 w-8 items-center justify-center rounded-lg surface-2 text-small cursor-pointer hover:surface-3 transition-all duration-200 text-zinc-500">
-                  {platform === 'twitch' ? '📺' : platform === 'youtube' ? '▶' : platform === 'twitter' ? '🐦' : '💬'}
+              {[
+                { label: 'Streams', icon: Radio },
+                { label: 'Videos', icon: PlayCircle },
+                { label: 'Community', icon: Users },
+                { label: 'Messages', icon: MessageSquare },
+              ].map((platform) => (
+                <span key={platform.label} title={platform.label} className="flex h-8 w-8 items-center justify-center rounded-lg surface-2 text-zinc-500 transition-all duration-200 hover:surface-3">
+                  <platform.icon className="h-4 w-4" />
                 </span>
               ))}
             </div>
           </div>
 
-          {linkSections.map(section => (
+          {linkSections.map((section) => (
             <div key={section.title}>
-              <h4 className="text-label text-zinc-400 mb-4">{section.title}</h4>
+              <h4 className="mb-4 text-label text-zinc-400">{section.title}</h4>
               <ul className="space-y-3">
-                {section.links.map(link => (
+                {section.links.map((link) => (
                   <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-small text-zinc-600 hover:text-zinc-300 transition-colors"
-                    >
+                    <Link href={link.href} className="text-small text-zinc-600 transition-colors hover:text-zinc-300">
                       {link.label}
                     </Link>
                   </li>
@@ -416,13 +535,9 @@ function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 shadow-divider pt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <p className="text-small text-zinc-700">
-            &copy; 2026 Vibe Marketplace. Get paid to play.
-          </p>
-          <p className="text-small text-zinc-800">
-            Made for streamers, by streamers.
-          </p>
+        <div className="mt-12 flex flex-col items-center gap-4 border-t border-white/[0.05] pt-8 sm:flex-row sm:justify-between">
+          <p className="text-small text-zinc-700">Copyright 2026 Vibe Marketplace.</p>
+          <p className="text-small text-zinc-800">Made for paid game discovery.</p>
         </div>
       </div>
     </footer>
@@ -432,95 +547,26 @@ function Footer() {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-black">
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-grid px-6">
-        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="h-[500px] w-[500px] rounded-full bg-brand/5 blur-[120px]" />
-          <div className="absolute -right-40 -top-40 h-[300px] w-[300px] rounded-full bg-cyan/5 blur-[100px]" />
-          <div className="absolute -bottom-40 -left-40 h-[300px] w-[300px] rounded-full bg-pink/5 blur-[100px]" />
-        </div>
-
-        <div className="relative z-10 flex max-w-3xl flex-col items-center text-center">
-          <FadeIn>
-            <div className="inline-flex items-center gap-2 rounded-full surface-2 px-4 py-1.5">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green" />
-              <span className="text-small font-medium text-zinc-400">Streamer Marketplace</span>
-            </div>
-          </FadeIn>
-
-          <FadeIn delay={100}>
-            <h1 className="mt-8 text-display-xl text-zinc-50">
-              <span className="text-gradient-brand">Get Paid</span>
-              <br />
-              to Play.
-            </h1>
-          </FadeIn>
-
-          <FadeIn delay={200}>
-            <p className="mt-6 max-w-lg text-subheading leading-relaxed text-zinc-500">
-              Find streamers to play your game — or get paid to play theirs. 
-              Fortnite, Roblox, Minecraft, Steam — if it&apos;s a game, it&apos;s on <span className="text-brand font-semibold">Vibe</span>.
-            </p>
-          </FadeIn>
-
-          <FadeIn delay={300}>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <Link href="/auth">
-                <Button size="lg" className="w-full sm:w-auto gap-2">
-                  <Trophy className="h-5 w-5" />
-                  I&apos;m a Streamer
-                </Button>
-              </Link>
-              <Link href="/auth">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto gap-2">
-                  <Gamepad2 className="h-5 w-5" />
-                  I&apos;m a Developer
-                </Button>
-              </Link>
-            </div>
-          </FadeIn>
-
-          <FadeIn delay={400}>
-            <div className="mt-12 flex flex-wrap justify-center gap-3">
-              {[
-                { emoji: '⚔️', label: 'Fortnite', color: 'text-cyan' },
-                { emoji: '🧊', label: 'Roblox', color: 'text-pink' },
-                { emoji: '⛏️', label: 'Minecraft', color: 'text-green' },
-                { emoji: '🎮', label: 'Steam', color: 'text-brand' },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="inline-flex items-center gap-2 rounded-full surface-2 px-5 py-2 text-caption font-medium"
-                >
-                  <span>{item.emoji}</span>
-                  <span className={item.color}>{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
+      <AppHeader />
+      <MarketplaceHero />
       <HowItWorks />
       <StatsBar />
       <FeaturedGigs />
       <Testimonials />
 
-      <section className="py-20 lg:py-24">
+      <section className="border-t border-white/[0.05] py-20 lg:py-24">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <FadeIn>
-            <Badge variant="primary" className="mb-4">Ready?</Badge>
-            <h2 className="text-display text-zinc-50">
-              Join the Vibe
-            </h2>
-            <p className="mt-4 text-body text-zinc-500 leading-relaxed">
-              Whether you&apos;re a streamer looking for paid gigs or a dev wanting your game streamed, 
-              you&apos;re one click away.
+            <Badge variant="primary" className="mb-4">Ready to trade attention for playtime?</Badge>
+            <h2 className="text-display text-zinc-50">Start from the side of the marketplace that fits you.</h2>
+            <p className="mt-4 text-body leading-relaxed text-zinc-500">
+              Streamers can browse paid campaigns. Game creators can post a gig and compare applicants in one workspace.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/auth">
-                <Button size="lg">Start Streaming</Button>
+              <Link href="/streamer">
+                <Button size="lg">Browse Gigs</Button>
               </Link>
-              <Link href="/auth">
+              <Link href="/dev/post">
                 <Button variant="secondary" size="lg">Post a Gig</Button>
               </Link>
             </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +25,6 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
-  Sparkles,
   MapPin,
   ArrowLeft,
   ExternalLink,
@@ -96,12 +96,7 @@ function CompletedGigCard({ gig }: { gig: Gig }) {
 function ProfileSkeleton() {
   return (
     <div className="min-h-screen bg-black">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <div className="h-4 w-24 rounded shimmer" />
-          <div className="h-5 w-16 rounded shimmer" />
-        </div>
-      </header>
+      <AppHeader />
       <div className="mx-auto max-w-4xl px-6 py-12 space-y-8">
         <div className="flex items-center gap-5">
           <div className="h-20 w-20 rounded-full shimmer" />
@@ -205,20 +200,14 @@ export default function StreamerProfilePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link href="/streamer" className="flex items-center gap-2 text-body text-zinc-400 hover:text-zinc-100 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Gigs
-          </Link>
-          <Link href="/" className="flex items-center gap-2" aria-label="Vibe home">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <span className="text-caption font-bold text-zinc-50">Vibe</span>
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-4xl px-6 py-8 space-y-8">
+        <Link href="/streamer" className="inline-flex items-center gap-2 text-body text-zinc-400 transition-colors hover:text-zinc-100">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Gigs
+        </Link>
+
         <section aria-label="Streamer profile">
           <Card className="overflow-hidden">
             <div className="bg-gradient-to-b from-brand/10 via-transparent to-transparent p-6 sm:p-8">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -189,19 +190,7 @@ export default function PostGigPage() {
   if (!currentDev) {
     return (
       <div className="min-h-screen bg-black">
-        <header className="shadow-divider sticky top-0 z-50 bg-black">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-brand" />
-              <span className="text-caption font-bold text-zinc-50">Vibe</span>
-            </Link>
-            <Link href="/auth">
-              <Button variant="ghost" size="sm" className="gap-1">
-                Sign In
-              </Button>
-            </Link>
-          </div>
-        </header>
+        <AppHeader />
         <div className="flex flex-col items-center justify-center py-32 px-6">
           <div className="flex h-20 w-20 items-center justify-center rounded-full surface-3 mb-6">
             <Sparkles className="h-10 w-10 text-zinc-600" />
@@ -222,21 +211,15 @@ export default function PostGigPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <span className="text-caption font-bold text-zinc-50">Vibe</span>
-          </Link>
-          <Link href="/dev">
-            <Button variant="ghost" size="sm" className="gap-1">
-              <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-            </Button>
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-6xl px-6 py-8">
+        <Link href="/dev">
+          <Button variant="ghost" size="sm" className="mb-6 gap-1">
+            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+          </Button>
+        </Link>
+
         {submitted ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="flex h-20 w-20 items-center justify-center rounded-full surface-3 mb-6">

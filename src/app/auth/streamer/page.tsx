@@ -2,13 +2,22 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { AuthHeader } from '@/components/auth-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Sparkles, ArrowLeft, UserPlus, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, UserPlus, CheckCircle2, Radio, PlayCircle } from 'lucide-react'
 import { register } from '@/lib/api-client'
 import { signIn } from 'next-auth/react'
+
+function BadgeLike({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-2.5 py-1 text-small text-zinc-400 shadow-border">
+      {icon}
+      {label}
+    </span>
+  )
+}
 
 export default function StreamerSignupPage() {
   const router = useRouter()
@@ -16,9 +25,8 @@ export default function StreamerSignupPage() {
   const [handle, setHandle] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [bio, setBio] = useState('')
-  const [twitchConnected, setTwitchConnected] = useState(false)
-  const [youtubeConnected, setYoutubeConnected] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -29,6 +37,7 @@ export default function StreamerSignupPage() {
     if (!email.trim()) { setError('Email is required'); return }
     if (!password.trim()) { setError('Password is required'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
+    if (password !== confirmPassword) { setError('Passwords do not match'); return }
     setError('')
     setLoading(true)
     try {
@@ -37,10 +46,9 @@ export default function StreamerSignupPage() {
         handle: handle.trim().replace('@', ''),
         email: email.trim(),
         password: password,
+        confirmPassword: confirmPassword,
         role: 'streamer',
         bio: bio.trim(),
-        twitchConnected,
-        youtubeConnected,
       })
       const result = await signIn('credentials', {
         email: email.trim(),
@@ -54,8 +62,8 @@ export default function StreamerSignupPage() {
       }
       setSubmitted(true)
       setTimeout(() => router.push('/streamer'), 1500)
-    } catch (err: any) {
-      setError(err.message || 'Failed to create account')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create account')
       setLoading(false)
     }
   }
@@ -76,21 +84,13 @@ export default function StreamerSignupPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <span className="text-caption font-bold text-zinc-50">Vibe</span>
-          </Link>
-          <Link href="/auth">
-            <Button variant="ghost" size="sm" className="gap-1">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Button>
-          </Link>
-        </div>
-      </header>
+      <AuthHeader />
 
       <div className="mx-auto max-w-lg px-6 py-16">
+        <Button variant="ghost" size="sm" className="mb-6 gap-1" onClick={() => router.push('/auth')}>
+          <ArrowLeft className="h-4 w-4" /> Back to Login
+        </Button>
+
         <div className="mb-8 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl surface-3 mx-auto mb-4">
             <UserPlus className="h-8 w-8 text-brand" />
@@ -132,32 +132,29 @@ export default function StreamerSignupPage() {
               onChange={e => setPassword(e.target.value)}
             />
             <Input
+              label="Confirm Password"
+              id="confirm-password"
+              type="password"
+              placeholder="Re-enter your password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+            />
+            <Input
               label="Bio"
               id="bio"
               placeholder="Tell streamers about yourself..."
               value={bio}
               onChange={e => setBio(e.target.value)}
             />
-            <div className="space-y-3">
-              <p className="text-label text-zinc-400">Connected Platforms</p>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={twitchConnected}
-                  onChange={e => setTwitchConnected(e.target.checked)}
-                  className="h-4 w-4 rounded bg-zinc-950 text-brand shadow-[0_0_0_1px_rgba(255,255,255,0.06)] focus:ring-brand/50"
-                />
-                <span className="text-body text-zinc-300">Twitch</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={youtubeConnected}
-                  onChange={e => setYoutubeConnected(e.target.checked)}
-                  className="h-4 w-4 rounded bg-zinc-950 text-brand shadow-[0_0_0_1px_rgba(255,255,255,0.06)] focus:ring-brand/50"
-                />
-                <span className="text-body text-zinc-300">YouTube</span>
-              </label>
+            <div className="rounded-lg border border-white/[0.06] bg-zinc-950/60 p-4">
+              <p className="text-label text-zinc-400">Streaming Platforms</p>
+              <p className="mt-2 text-small leading-relaxed text-zinc-500">
+                Create your account first, then connect Twitch or YouTube with the platform login. Manual checkboxes are not used for verification.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <BadgeLike icon={<Radio className="h-3.5 w-3.5" />} label="Twitch login required" />
+                <BadgeLike icon={<PlayCircle className="h-3.5 w-3.5" />} label="YouTube login required" />
+              </div>
             </div>
             {error && <p className="text-body text-red-500">{error}</p>}
             <Button className="w-full" size="lg" onClick={handleSubmit} disabled={loading}>

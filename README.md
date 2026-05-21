@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vibe Marketplace
 
-## Getting Started
+Vibe is a Next.js marketplace for game creators to post paid streamer gigs and for streamers to apply, manage work, and track payouts.
 
-First, run the development server:
+## Local Testing
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Use the local SQLite/libSQL database for development. You do not need Supabase for local testing.
+
+```powershell
+copy .env.example .env
+npm.cmd install
+node --experimental-require-module node_modules\prisma\build\index.js generate
+npm.cmd run db:push
+npm.cmd run db:seed
+npm.cmd run build
+npm.cmd run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The Prisma CLI currently needs the `node --experimental-require-module ... generate` command on Node 22.2.0 in this environment. If `npm.cmd run db:generate` works on your Node version, that script is fine too.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Database
 
-## Learn More
+Local development uses:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+DATABASE_URL="file:./dev.db"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+For production, use a hosted database. The current code is wired for SQLite/libSQL, so Turso/libSQL is the lowest-friction hosted option. Supabase is Postgres, so using Supabase would require changing the Prisma datasource provider and validating the schema/migrations against Postgres.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## OAuth
 
-## Deploy on Vercel
+Twitch and YouTube login require provider credentials in `.env`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```env
+TWITCH_CLIENT_ID=""
+TWITCH_CLIENT_SECRET=""
+YOUTUBE_CLIENT_ID=""
+YOUTUBE_CLIENT_SECRET=""
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Kick is not included in the installed NextAuth provider package. It needs a custom OAuth provider plus database fields before it should appear as a verified connection option.

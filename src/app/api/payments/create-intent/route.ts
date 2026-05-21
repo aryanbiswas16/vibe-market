@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/prisma"
-import { stripe, calculateFee, CURRENCY } from "@/lib/stripe"
+import { getStripe, calculateFee, CURRENCY } from "@/lib/stripe"
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 import { z } from "zod"
 
@@ -62,6 +62,8 @@ export async function POST(request: Request) {
 
     const amountInCents = gig.budget * 100
     const fee = calculateFee(amountInCents)
+
+    const stripe = getStripe()
 
     // Create Stripe PaymentIntent (manual capture)
     const paymentIntent = await stripe.paymentIntents.create({

@@ -14,9 +14,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Vibe — get paid to play',
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? 'http://localhost:3000'),
+  title: 'Vibe | Streamer Marketplace for Game Creators',
   description:
-    'The streamer marketplace where devs pay streamers to play their games. Fortnite, Roblox, Minecraft, indie Steam games — get paid to do what you love.',
+    'A paid gig marketplace where game creators hire streamers and streamers find games worth playing.',
   keywords: [
     'streamer',
     'marketplace',
@@ -30,17 +31,19 @@ export const metadata: Metadata = {
     'sponsorship',
   ],
   openGraph: {
-    title: 'Vibe — get paid to play',
+    title: 'Vibe | Streamer Marketplace for Game Creators',
     description:
-      'The streamer marketplace where devs pay streamers to play their games.',
+      'A paid gig marketplace where game creators hire streamers and streamers find games worth playing.',
     type: 'website',
     siteName: 'Vibe',
+    images: ['/marketplace-hero.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Vibe — get paid to play',
+    title: 'Vibe | Streamer Marketplace for Game Creators',
     description:
-      'The streamer marketplace where devs pay streamers to play their games.',
+      'A paid gig marketplace where game creators hire streamers and streamers find games worth playing.',
+    images: ['/marketplace-hero.png'],
   },
 }
 

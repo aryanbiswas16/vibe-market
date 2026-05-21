@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,7 +27,6 @@ import {
   Calendar,
   Eye,
   ArrowLeft,
-  Sparkles,
   CheckCircle2,
   XCircle,
   Monitor,
@@ -448,21 +448,15 @@ export default function GigDetailPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link href={isDevView ? '/dev' : '/streamer'} className="flex items-center gap-2 text-body text-zinc-400 hover:text-zinc-100 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            {isDevView ? 'Back to Dashboard' : 'Back to Gigs'}
-          </Link>
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <span className="text-caption font-bold text-zinc-50">Vibe</span>
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className={cn('relative bg-gradient-to-b', gradient)}>
         <div className="mx-auto max-w-4xl px-6 py-16">
+          <Link href={isDevView ? '/dev' : '/streamer'} className="mb-8 inline-flex items-center gap-2 text-body text-zinc-400 transition-colors hover:text-zinc-100">
+            <ArrowLeft className="h-4 w-4" />
+            {isDevView ? 'Back to Dashboard' : 'Back to Gigs'}
+          </Link>
+
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 text-small text-zinc-600">
               <Link href={isDevView ? '/dev' : '/streamer'} className="hover:text-zinc-400">{isDevView ? 'Dashboard' : 'Gigs'}</Link>

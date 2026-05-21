@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/prisma"
-import { stripe } from "@/lib/stripe"
+import { getStripe } from "@/lib/stripe"
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 import { z } from "zod"
 
@@ -39,6 +39,8 @@ export async function POST(request: Request) {
     if (!payment?.stripePaymentIntentId) {
       return NextResponse.json({ error: "No successful payment found" }, { status: 400 })
     }
+
+    const stripe = getStripe()
 
     // Capture the payment intent (release funds from hold)
     const intent = await stripe.paymentIntents.capture(payment.stripePaymentIntentId)

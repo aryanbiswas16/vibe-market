@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -238,14 +239,7 @@ export default function DevDashboard() {
   if (!user) {
     return (
       <div className="min-h-screen bg-black">
-        <header className="shadow-divider sticky top-0 z-50 bg-black">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-brand" />
-              <span className="text-caption font-bold text-zinc-50">Vibe</span>
-            </Link>
-          </div>
-        </header>
+        <AppHeader />
         <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-6 pt-24 text-center">
           <Gamepad2 className="mb-4 h-12 w-12 text-zinc-700" />
           <h1 className="text-heading text-zinc-50">Dev Dashboard</h1>
@@ -262,20 +256,7 @@ export default function DevDashboard() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <span className="text-caption font-bold text-zinc-50">Vibe</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/streamer">
-              <Button variant="ghost" size="sm">Streamer Portal</Button>
-            </Link>
-            <Avatar src={currentDev.avatar || currentDev.image} name={currentDev.name} size="sm" />
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-8">

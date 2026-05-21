@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -497,14 +498,7 @@ export default function StreamerDashboard() {
   if (!user) {
     return (
       <div className="min-h-screen bg-black">
-        <header className="shadow-divider sticky top-0 z-50 bg-black">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-brand" />
-              <span className="text-caption font-bold text-zinc-50">Vibe</span>
-            </Link>
-          </div>
-        </header>
+        <AppHeader />
         <SignUpPrompt />
       </div>
     )
@@ -512,20 +506,7 @@ export default function StreamerDashboard() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <span className="text-caption font-bold text-zinc-50">Vibe</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dev">
-              <Button variant="ghost" size="sm">Dev Portal</Button>
-            </Link>
-            <Avatar src={currentStreamer.avatar || currentStreamer.image} name={currentStreamer.name} size="sm" status="online" />
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-8">

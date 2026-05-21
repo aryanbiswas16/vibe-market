@@ -8,10 +8,14 @@ const registerSchema = z.object({
   handle: z.string().min(1, "Handle is required").regex(/^[a-zA-Z0-9_]+$/, "Handle can only contain letters, numbers, and underscores"),
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Confirm password must be at least 6 characters"),
   role: z.enum(["streamer", "dev"]),
   bio: z.string().optional().default(""),
   twitchConnected: z.boolean().optional().default(false),
   youtubeConnected: z.boolean().optional().default(false),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 })
 
 export async function POST(request: Request) {

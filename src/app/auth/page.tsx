@@ -1,39 +1,104 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { signIn } from 'next-auth/react'
+import { AuthHeader } from '@/components/auth-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/lib/auth'
-import { Sparkles, Gamepad2, Users, ChevronRight } from 'lucide-react'
+import { Gamepad2, Users, ChevronRight, LogIn } from 'lucide-react'
 
 export default function AuthPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   if (user) {
     router.replace(user.role === 'streamer' ? '/streamer' : '/dev')
     return null
   }
 
+  const handleLogin = async () => {
+    if (!email.trim()) { setError('Email is required'); return }
+    if (!password.trim()) { setError('Password is required'); return }
+    setError('')
+    setLoading(true)
+    const result = await signIn('credentials', {
+      email: email.trim(),
+      password,
+      redirect: false,
+    })
+    setLoading(false)
+
+    if (result?.error) {
+      setError('Invalid email or password')
+      return
+    }
+
+    router.refresh()
+  }
+
   return (
     <div className="min-h-screen bg-black flex flex-col">
-      <header className="shadow-divider sticky top-0 z-50 bg-black">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <span className="text-caption font-bold text-zinc-50">Vibe</span>
-          </Link>
-        </div>
-      </header>
+      <AuthHeader />
 
       <div className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-2xl">
+        <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+          <Card className="h-fit">
+            <CardContent className="space-y-5 p-6">
+              <div>
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg surface-3">
+                  <LogIn className="h-6 w-6 text-brand" />
+                </div>
+                <h1 className="text-heading text-zinc-50">Login</h1>
+                <p className="mt-2 text-body text-zinc-500">Use your Vibe account to get back to your dashboard.</p>
+              </div>
+
+              <Input
+                label="Email"
+                id="login-email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                label="Password"
+                id="login-password"
+                type="password"
+                placeholder="Your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleLogin()
+                }}
+              />
+
+              {error && <p className="text-body text-red-500">{error}</p>}
+
+              <Button className="w-full" size="lg" onClick={handleLogin} disabled={loading}>
+                {loading ? 'Signing in...' : 'Login'}
+              </Button>
+
+              <div className="rounded-lg border border-white/[0.06] bg-zinc-950/60 p-3">
+                <p className="text-small text-zinc-500">Demo account</p>
+                <p className="mt-1 text-small text-zinc-300">lunarae@vibe.dev / password123</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div>
           <div className="text-center mb-10">
             <Badge variant="primary" className="mb-4">Join the Vibe</Badge>
-            <h1 className="text-display text-zinc-50">How do you want to use Vibe?</h1>
-            <p className="mt-3 text-body text-zinc-500">Choose your path to get started.</p>
+            <h2 className="text-display text-zinc-50">How do you want to use Vibe?</h2>
+            <p className="mt-3 text-body text-zinc-500">Create the account type that matches your role.</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -84,6 +149,7 @@ export default function AuthPage() {
                 </CardContent>
               </Card>
             </Link>
+          </div>
           </div>
         </div>
       </div>

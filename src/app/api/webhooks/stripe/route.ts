@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { stripe } from "@/lib/stripe"
+import { getStripe } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 
@@ -20,6 +20,7 @@ export async function POST(request: Request) {
 
   let event
   try {
+    const stripe = getStripe()
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET ?? "")
   } catch (err) {
     console.error("Webhook signature verification failed:", err)

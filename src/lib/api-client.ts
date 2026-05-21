@@ -108,6 +108,7 @@ export async function register(data: {
   handle: string
   email: string
   password: string
+  confirmPassword: string
   role: string
   bio?: string
   twitchConnected?: boolean
