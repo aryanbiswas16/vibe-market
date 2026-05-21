@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Gamepad2, LogIn, Sparkles, Users } from 'lucide-react'
+import { ArrowLeft, Gamepad2, LogIn, Sparkles, Users } from 'lucide-react'
 
 export function AuthHeader() {
   return (
@@ -14,6 +14,13 @@ export function AuthHeader() {
         </Link>
 
         <nav className="flex items-center gap-2">
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Back to Site</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+          </Link>
           <Link href="/auth">
             <Button variant="ghost" size="sm" className="gap-1.5">
               <LogIn className="h-3.5 w-3.5" />

@@ -49,7 +49,7 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
         {dot && (
           <span
             className={cn(
-              'w-2 h-2 rounded-full',
+              'mr-1.5 h-2 w-2 rounded-full',
               variant === 'primary' && 'bg-brand',
               variant === 'green' && 'bg-green',
               variant === 'cyan' && 'bg-cyan',

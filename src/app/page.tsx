@@ -9,18 +9,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getGigs } from '@/lib/api-client'
-import { cn, formatCurrency, getGameIcon } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import type { Gig } from '@/lib/types'
 import {
   ArrowRight,
   BarChart3,
   BriefcaseBusiness,
-  CalendarDays,
-  CheckCircle2,
   ChevronRight,
+  Code2,
   CreditCard,
   DollarSign,
-  Filter,
   Gamepad2,
   HeartHandshake,
   MessageSquare,
@@ -28,9 +26,12 @@ import {
   Quote,
   Radio,
   Rocket,
+  Search,
   ShieldCheck,
   Sparkles,
   Star,
+  Shield,
+  Clock,
   Trophy,
   Users,
   Zap,
@@ -79,27 +80,55 @@ const marketplaceHighlights = [
   { icon: MessageSquare, label: 'Avg reply', value: '< 6h' },
 ]
 
-const heroGigs = [
-  { title: 'Roblox horror launch stream', game: 'Roblox', budget: '$450', meta: '8 applicants', tone: 'green' },
-  { title: 'Fortnite UEFN map spotlight', game: 'Fortnite', budget: '$300', meta: '12 applicants', tone: 'cyan' },
-  { title: 'Steam Next Fest demo run', game: 'Steam', budget: '$650', meta: '5 applicants', tone: 'yellow' },
+const popularSearches = ['Roblox launch', 'Steam demo', 'UEFN map', 'Cozy indie', 'Horror playtest']
+
+const categoryBlocks = [
+  {
+    title: 'Launch Campaigns',
+    desc: 'Paid streams for trailers, demos, release weeks, and wishlists.',
+    icon: Rocket,
+    color: 'text-brand',
+    href: '/streamer',
+  },
+  {
+    title: 'Playtests',
+    desc: 'Find creators who can stress test loops, onboarding, and retention.',
+    icon: Gamepad2,
+    color: 'text-cyan',
+    href: '/streamer',
+  },
+  {
+    title: 'Indie Spotlights',
+    desc: 'Creator-led discovery for Steam, itch, Roblox, Minecraft, and UEFN.',
+    icon: Sparkles,
+    color: 'text-yellow',
+    href: '/dev/post',
+  },
+  {
+    title: 'Creator Bounties',
+    desc: 'Brief-based gigs with budgets, deliverables, applicants, and payouts.',
+    icon: Trophy,
+    color: 'text-green',
+    href: '/dev/post',
+  },
 ]
 
 function MarketplaceHero() {
   return (
     <section className="relative overflow-hidden border-b border-white/[0.06] bg-black">
       <Image
-        src="/marketplace-hero.png"
-        alt="Marketplace dashboard preview for game creators hiring streamers"
+        src="/indie-game-wall.png"
+        alt="Original indie game scenes available for streamer campaigns"
         fill
         priority
         sizes="100vw"
-        className="object-cover opacity-35"
+        className="object-cover opacity-22"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#000_0%,rgba(0,0,0,0.88)_38%,rgba(0,0,0,0.48)_72%,#000_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,rgba(0,0,0,0.68)_88%,#000_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,197,94,0.16),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(0,212,255,0.12),transparent_30%),linear-gradient(90deg,#000_0%,rgba(0,0,0,0.9)_46%,rgba(0,0,0,0.58)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.66)_88%,#000_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-green/70 to-transparent" />
 
-      <div className="relative z-10 mx-auto grid min-h-[86vh] max-w-7xl items-center gap-10 px-6 py-10 lg:grid-cols-[0.96fr_1.04fr] lg:py-14">
+      <div className="relative z-10 mx-auto grid min-h-[86vh] max-w-7xl items-center gap-12 px-6 py-10 lg:grid-cols-[0.86fr_1.14fr] lg:py-14">
         <div className="max-w-2xl">
           <FadeIn>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-950/80 px-3 py-1.5 backdrop-blur">
@@ -121,9 +150,32 @@ function MarketplaceHero() {
           </FadeIn>
 
           <FadeIn delay={300}>
+            <div className="mt-8 max-w-xl rounded-xl border border-white/[0.08] bg-zinc-950/88 p-2 shadow-2xl shadow-black/40 backdrop-blur">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="flex min-h-12 flex-1 items-center gap-3 rounded-lg bg-black/60 px-4">
+                  <Search className="h-5 w-5 text-green" />
+                  <span className="text-body text-zinc-400">Search paid gigs, games, creators...</span>
+                </div>
+                <Link href="/streamer">
+                  <Button size="lg" className="w-full gap-2 sm:w-auto">
+                    Search Marketplace <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 px-1 pb-1">
+                {popularSearches.map((search) => (
+                  <Link key={search} href="/streamer" className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-small text-zinc-400 transition-colors hover:border-green/30 hover:text-green">
+                    {search}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={380}>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/streamer">
-                <Button size="lg" className="w-full gap-2 sm:w-auto">
+                <Button variant="secondary" size="lg" className="w-full gap-2 sm:w-auto">
                   <Trophy className="h-5 w-5" />
                   Browse Gigs
                 </Button>
@@ -137,7 +189,7 @@ function MarketplaceHero() {
             </div>
           </FadeIn>
 
-          <FadeIn delay={400}>
+          <FadeIn delay={460}>
             <div className="mt-9 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
               {marketplaceHighlights.map((item) => (
                 <div key={item.label} className="rounded-lg border border-white/[0.06] bg-zinc-950/70 p-3 backdrop-blur">
@@ -151,64 +203,90 @@ function MarketplaceHero() {
         </div>
 
         <FadeIn delay={250}>
-          <div className="relative ml-auto w-full max-w-[560px] rounded-xl border border-white/[0.08] bg-zinc-950/86 p-4 shadow-2xl shadow-black/50 backdrop-blur-md">
-            <div className="mb-4 flex items-center justify-between border-b border-white/[0.06] pb-3">
-              <div>
-                <p className="text-label text-zinc-500">Marketplace Pulse</p>
-                <p className="mt-1 text-caption font-semibold text-zinc-50">Live paid campaigns</p>
-              </div>
-              <div className="flex items-center gap-2 rounded-md bg-green/10 px-2.5 py-1 text-small font-medium text-green">
-                <Radio className="h-3.5 w-3.5" />
-                Open now
-              </div>
-            </div>
-
-            <div className="grid gap-3">
-              {heroGigs.map((gig) => (
-                <div key={gig.title} className="rounded-lg border border-white/[0.06] bg-black/40 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <PlayCircle
-                          className={cn(
-                            'h-4 w-4',
-                            gig.tone === 'green' && 'text-green',
-                            gig.tone === 'cyan' && 'text-cyan',
-                            gig.tone === 'yellow' && 'text-yellow',
-                          )}
-                        />
-                        <p className="text-caption font-semibold text-zinc-50">{gig.title}</p>
-                      </div>
-                      <p className="mt-1 text-small text-zinc-500">{gig.game} campaign</p>
-                    </div>
-                    <Badge variant="green" size="sm">{gig.budget}</Badge>
+          <div className="relative ml-auto hidden w-full max-w-[640px] lg:block">
+            <div className="absolute -inset-6 rounded-[2rem] bg-[radial-gradient(circle_at_35%_25%,rgba(34,197,94,0.18),transparent_32%),radial-gradient(circle_at_70%_70%,rgba(0,212,255,0.16),transparent_30%)] blur-2xl" />
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-zinc-950/70 shadow-2xl shadow-black/50">
+              <Image
+                src="/indie-game-wall.png"
+                alt="Original indie game scenes in a campaign marketplace"
+                width={1200}
+                height={900}
+                priority
+                className="aspect-[4/3] w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_45%,rgba(0,0,0,0.82)_100%)]" />
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-label text-zinc-400">Featured Campaigns</p>
+                    <p className="mt-1 max-w-sm text-subheading text-zinc-50">Original worlds ready for streamers, playtests, and launch weeks.</p>
                   </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2 text-small text-zinc-500">
-                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {gig.meta}</span>
-                    <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> This week</span>
-                    <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> Fixed</span>
-                  </div>
+                  <Badge variant="green" size="lg" dot>Live inventory</Badge>
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {[
-                { label: 'Creator fit', value: '92%', icon: CheckCircle2 },
-                { label: 'Avg budget', value: '$420', icon: DollarSign },
-                { label: 'Filtered', value: '34', icon: Filter },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg bg-zinc-900/80 p-3">
-                  <item.icon className="mb-2 h-4 w-4 text-zinc-400" />
-                  <p className="text-caption font-semibold text-zinc-50">{item.value}</p>
-                  <p className="text-small text-zinc-500">{item.label}</p>
-                </div>
-              ))}
+              </div>
             </div>
           </div>
         </FadeIn>
       </div>
     </section>
+  )
+}
+
+function MarketplaceCategories() {
+  return (
+    <section className="border-b border-white/[0.05] bg-[#05070b] py-16 lg:py-20">
+      <div className="mx-auto max-w-7xl px-6">
+        <FadeIn>
+          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Badge variant="green" className="mb-4">Start with the right campaign</Badge>
+              <h2 className="text-display text-zinc-50">Built like a marketplace, not a landing page</h2>
+              <p className="mt-3 max-w-2xl text-body text-zinc-500">
+                Creators should understand the inventory immediately: launch work, playtests, indie discovery, and bounty-style gigs.
+              </p>
+            </div>
+            <Link href="/dev/post">
+              <Button className="gap-2">
+                List a Campaign <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </FadeIn>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {categoryBlocks.map((category, index) => (
+            <FadeIn key={category.title} delay={index * 80}>
+              <Link href={category.href} className="group block h-full">
+                <div className="flex h-full flex-col justify-between rounded-xl border border-white/[0.08] bg-white/[0.045] p-6 transition-all duration-200 hover:-translate-y-1 hover:border-green/25 hover:bg-white/[0.065]">
+                  <div>
+                    <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-lg bg-black/50 shadow-border">
+                      <category.icon className={cn('h-6 w-6', category.color)} />
+                    </div>
+                    <h3 className="text-subheading text-zinc-50">{category.title}</h3>
+                    <p className="mt-2 text-small leading-relaxed text-zinc-500">{category.desc}</p>
+                  </div>
+                  <div className="mt-8 flex items-center justify-between border-t border-white/[0.06] pt-4 text-small text-zinc-500">
+                    <span>Explore</span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </div>
+              </Link>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function GameTypeMark({ type }: { type: Gig['gameType'] }) {
+  const Icon = type === 'steam' ? Code2 : type === 'fortnite' ? Rocket : type === 'roblox' ? Sparkles : type === 'minecraft' ? Shield : Gamepad2
+  const color = type === 'steam' ? 'text-brand' : type === 'fortnite' ? 'text-cyan' : type === 'roblox' ? 'text-pink' : type === 'minecraft' ? 'text-green' : 'text-yellow'
+
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-black/45">
+      <Icon className={cn('h-5 w-5', color)} />
+    </span>
   )
 }
 
@@ -258,7 +336,7 @@ function FeaturedGigs() {
                     <CardContent className="flex h-full flex-col gap-4 p-6">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span className="shrink-0 text-2xl">{getGameIcon(gig.gameType)}</span>
+                          <GameTypeMark type={gig.gameType} />
                           <div className="min-w-0">
                             <p className="line-clamp-1 text-caption font-semibold text-zinc-50 transition-colors group-hover:text-brand">{gig.title}</p>
                             <p className="text-small text-zinc-500">{gig.game}</p>
@@ -462,6 +540,74 @@ function Testimonials() {
   )
 }
 
+const trustItems = [
+  {
+    icon: Shield,
+    title: 'Verified creator profiles',
+    desc: 'Platform connections, audience signals, ratings, and completion history make applicants easier to compare.',
+  },
+  {
+    icon: CreditCard,
+    title: 'Payment-first workflows',
+    desc: 'Campaigns expose budget, payout type, fee assumptions, and release status before work starts.',
+  },
+  {
+    icon: Clock,
+    title: 'Launch-week speed',
+    desc: 'Campaigns are structured for fast decisions: search, shortlist, hire, stream, and close the loop.',
+  },
+  {
+    icon: Code2,
+    title: 'Indie-ready briefs',
+    desc: 'Post a trailer push, demo playtest, Roblox activation, UEFN map spotlight, or Steam wishlist campaign.',
+  },
+]
+
+function TrustAndSafety() {
+  return (
+    <section className="border-y border-white/[0.05] bg-[linear-gradient(180deg,#05070b,#000)] py-20 lg:py-24">
+      <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+        <FadeIn>
+          <div className="sticky top-28">
+            <Badge variant="cyan" className="mb-4">Trust Layer</Badge>
+            <h2 className="text-display text-zinc-50">The stuff a real marketplace needs before money moves.</h2>
+            <p className="mt-4 text-body leading-relaxed text-zinc-500">
+              The platform has to communicate safety, fit, payout clarity, and campaign quality from the first screen.
+            </p>
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              {[
+                { label: 'Avg response', value: 'under 6h' },
+                { label: 'Budget clarity', value: '100%' },
+                { label: 'Creator fit', value: 'scored' },
+                { label: 'Brief quality', value: 'guided' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-4">
+                  <p className="text-caption font-semibold text-zinc-50">{item.value}</p>
+                  <p className="mt-1 text-small text-zinc-500">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {trustItems.map((item, index) => (
+            <FadeIn key={item.title} delay={index * 80}>
+              <Card className="h-full p-6">
+                <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-lg bg-black/50 shadow-border">
+                  <item.icon className="h-5 w-5 text-green" />
+                </div>
+                <h3 className="text-subheading text-zinc-50">{item.title}</h3>
+                <p className="mt-3 text-small leading-relaxed text-zinc-500">{item.desc}</p>
+              </Card>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function Footer() {
   const linkSections = [
     {
@@ -549,9 +695,11 @@ export default function LandingPage() {
     <div className="min-h-screen bg-black">
       <AppHeader />
       <MarketplaceHero />
+      <MarketplaceCategories />
       <HowItWorks />
       <StatsBar />
       <FeaturedGigs />
+      <TrustAndSafety />
       <Testimonials />
 
       <section className="border-t border-white/[0.05] py-20 lg:py-24">
