@@ -21,10 +21,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           id={id}
           ref={ref}
           className={cn(
-            'h-10 w-full rounded-lg bg-white/[0.02] px-3 py-2 text-body text-[#f7f8f8] placeholder:text-[#8a8f98] transition-all duration-200 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
-            'focus:shadow-[0_0_0_1px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-2 focus:ring-brand/20',
+            'h-10 w-full rounded-lg bg-[#07080a] px-3 py-2 text-body text-[#f7f8f8] placeholder:text-[#8a8f98] transition-all duration-200 border border-white/[0.08]',
+            'focus:border-white/[0.15] focus:outline-none focus:ring-2 focus:ring-brand/20',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'shadow-[0_0_0_1px_rgba(239,68,68,0.5)] focus:shadow-[0_0_0_1px_rgba(239,68,68,0.5)] focus:ring-red-500/20',
+            error && 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20',
             className,
           )}
           {...props}
@@ -54,10 +54,10 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={id}
           ref={ref}
           className={cn(
-            'min-h-[100px] w-full rounded-lg bg-white/[0.02] px-3 py-2 text-body text-[#f7f8f8] placeholder:text-[#8a8f98] transition-all duration-200 resize-y shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
-            'focus:shadow-[0_0_0_1px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-2 focus:ring-brand/20',
+            'min-h-[100px] w-full rounded-lg bg-[#07080a] px-3 py-2 text-body text-[#f7f8f8] placeholder:text-[#8a8f98] transition-all duration-200 resize-y border border-white/[0.08]',
+            'focus:border-white/[0.15] focus:outline-none focus:ring-2 focus:ring-brand/20',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'shadow-[0_0_0_1px_rgba(239,68,68,0.5)] focus:shadow-[0_0_0_1px_rgba(239,68,68,0.5)] focus:ring-red-500/20',
+            error && 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20',
             className,
           )}
           {...props}
@@ -89,10 +89,10 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           id={id}
           ref={ref}
           className={cn(
-            'h-10 w-full rounded-lg bg-white/[0.02] px-3 py-2 text-body text-[#f7f8f8] transition-all duration-200 appearance-none shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
-            'focus:shadow-[0_0_0_1px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-2 focus:ring-brand/20',
+            'h-10 w-full rounded-lg bg-[#07080a] px-3 py-2 text-body text-[#f7f8f8] transition-all duration-200 appearance-none border border-white/[0.08]',
+            'focus:border-white/[0.15] focus:outline-none focus:ring-2 focus:ring-brand/20',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'shadow-[0_0_0_1px_rgba(239,68,68,0.5)] focus:shadow-[0_0_0_1px_rgba(239,68,68,0.5)] focus:ring-red-500/20',
+            error && 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20',
             className,
           )}
           {...props}
