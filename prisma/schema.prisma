@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @default("")
+  access_token      String? @default("")
+  expires_at        Int?
+  token_type        String? @default("")
+  scope             String? @default("")
+  id_token          String? @default("")
+  session_state     String? @default("")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  name               String
+  handle             String   @unique
+  email              String   @unique
+  emailVerified      DateTime?
+  hashedPassword     String?
+  image              String?
+  role               String   @default("streamer")
+  bio                String   @default("")
+  twitchConnected    Boolean  @default(false)
+  youtubeConnected   Boolean  @default(false)
+  twitchUsername     String?
+  youtubeChannelId   String?
+  avgViewers         Int?
+  followers          Int?
+  totalGigsCompleted Int      @default(0)
+  vibeScore          Int      @default(50)
+  rating             Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  stripeAccountId        String?
+  stripeOnboardingComplete Boolean @default(false)
+  accounts               Account[]
+  sessions               Session[]
+  gigs                   Gig[]
+  applications           Application[]
+  paymentsPayer          Payment[] @relation("PaymentPayer")
+  paymentsPayee          Payment[] @relation("PaymentPayee")
+}
+
+model Gig {
+  id              String   @id @default(cuid())
+  devId           String
+  title           String
+  description     String
+  game            String
+  gameType        String   @default("other")
+  platform        String   @default("twitch")
+  budget          Int
+  payoutType      String   @default("fixed")
+  minFollowers    Int?
+  minAvgViewers   Int?
+  duration        String
+  scheduledDate   DateTime
+  status          String   @default("open")
+  tags            String   @default("[]")
+  applicants      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  dev          User          @relation(fields: [devId], references: [id])
+  applications Application[]
+  payments     Payment[]     @relation("PaymentGig")
+}
+
+model Application {
+  id         String   @id @default(cuid())
+  gigId      String
+  streamerId String
+  message    String
+  status     String   @default("pending")
+  appliedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  gig      Gig  @relation(fields: [gigId], references: [id])
+  streamer User @relation(fields: [streamerId], references: [id])
+
+  @@unique([gigId, streamerId])
+}
+
+model Payment {
+  id                    String   @id @default(cuid())
+  gigId                 String
+  applicationId         String?
+  payerId               String
+  payeeId               String?
+  amount                Int
+  fee                   Int
+  stripePaymentIntentId String?  @unique
+  stripeTransferId      String?
+  status                String   @default("pending")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  gig  Gig   @relation("PaymentGig", fields: [gigId], references: [id])
+  payer User  @relation("PaymentPayer", fields: [payerId], references: [id])
+  payee User? @relation("PaymentPayee", fields: [payeeId], references: [id])
+
+  @@index([gigId])
+  @@index([payerId])
+  @@index([payeeId])
+  @@index([stripePaymentIntentId])
+}

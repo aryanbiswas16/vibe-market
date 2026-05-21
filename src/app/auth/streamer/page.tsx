@@ -6,33 +6,58 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { useAuth } from '@/lib/auth'
 import { Sparkles, ArrowLeft, UserPlus, CheckCircle2 } from 'lucide-react'
+import { register } from '@/lib/api-client'
+import { signIn } from 'next-auth/react'
 
 export default function StreamerSignupPage() {
   const router = useRouter()
-  const { signUp } = useAuth()
   const [name, setName] = useState('')
   const [handle, setHandle] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [bio, setBio] = useState('')
   const [twitchConnected, setTwitchConnected] = useState(false)
   const [youtubeConnected, setYoutubeConnected] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) { setError('Name is required'); return }
     if (!handle.trim()) { setError('Handle is required'); return }
+    if (!email.trim()) { setError('Email is required'); return }
+    if (!password.trim()) { setError('Password is required'); return }
+    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     setError('')
-    signUp('streamer', {
-      name: name.trim(),
-      handle: handle.trim().replace('@', ''),
-      bio: bio.trim(),
-      twitchConnected,
-      youtubeConnected,
-    })
-    setSubmitted(true)
-    setTimeout(() => router.push('/streamer'), 1500)
+    setLoading(true)
+    try {
+      await register({
+        name: name.trim(),
+        handle: handle.trim().replace('@', ''),
+        email: email.trim(),
+        password: password,
+        role: 'streamer',
+        bio: bio.trim(),
+        twitchConnected,
+        youtubeConnected,
+      })
+      const result = await signIn('credentials', {
+        email: email.trim(),
+        password: password,
+        redirect: false,
+      })
+      if (result?.error) {
+        setError('Account created but sign in failed. Please try logging in.')
+        setLoading(false)
+        return
+      }
+      setSubmitted(true)
+      setTimeout(() => router.push('/streamer'), 1500)
+    } catch (err: any) {
+      setError(err.message || 'Failed to create account')
+      setLoading(false)
+    }
   }
 
   if (submitted) {
@@ -91,6 +116,22 @@ export default function StreamerSignupPage() {
               onChange={e => setHandle(e.target.value)}
             />
             <Input
+              label="Email"
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
+            <Input
+              label="Password"
+              id="password"
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
+            <Input
               label="Bio"
               id="bio"
               placeholder="Tell streamers about yourself..."
@@ -119,7 +160,7 @@ export default function StreamerSignupPage() {
               </label>
             </div>
             {error && <p className="text-body text-red-500">{error}</p>}
-            <Button className="w-full" size="lg" onClick={handleSubmit}>
+            <Button className="w-full" size="lg" onClick={handleSubmit} disabled={loading}>
               Create Streamer Profile
             </Button>
           </CardContent>

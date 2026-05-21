@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useSyncExternalStore } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth'
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { DataStore, closeGig } from '@/lib/data'
+import { getGigs, getMyApplications, updateApplicationStatus } from '@/lib/api-client'
 import type { Gig } from '@/lib/types'
 import {
   cn,
@@ -86,6 +86,12 @@ function GigRow({ gig, onView, onClose }: { gig: Gig; onView: () => void; onClos
             <span className={cn('text-small font-medium', getStatusColor(gig.status))}>
               &bull; {gig.status.replace('_', ' ')}
             </span>
+            {gig.status === 'in_progress' && (
+              <Badge variant="cyan" size="sm">Payment Active</Badge>
+            )}
+            {gig.status === 'completed' && (
+              <Badge variant="green" size="sm">Paid</Badge>
+            )}
           </div>
           <div className="mt-0.5 flex items-center gap-3 text-small text-zinc-500">
             <span>{gig.game}</span>
@@ -128,6 +134,9 @@ export default function DevDashboard() {
   const router = useRouter()
   const { user, isLoading } = useAuth()
   const [search, setSearch] = useState('')
+  const [allGigs, setAllGigs] = useState<Gig[]>([])
+  const [fetching, setFetching] = useState(true)
+  const [userData, setUserData] = useState<any>(null)
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -135,12 +144,42 @@ export default function DevDashboard() {
     }
   }, [user, isLoading, router])
 
-  const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
-  const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
+  useEffect(() => {
+    if (!user) return
+    async function load() {
+      try {
+        const { getMe } = await import('@/lib/api-client')
+        const me = await getMe()
+        setUserData(me)
+      } catch {
+        setUserData(user)
+      }
+    }
+    load()
+  }, [user])
+
+  const fetchData = useCallback(async () => {
+    if (!user) return
+    setFetching(true)
+    try {
+      const gigsRes = await getGigs({ limit: '100' })
+      setAllGigs(gigsRes.gigs as Gig[])
+    } catch (err) {
+      console.error('Failed to load gigs:', err)
+    } finally {
+      setFetching(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const currentDev = userData || user
 
   const myGigs = useMemo(() => {
-    if (!user) return []
-    let filtered = allGigs.filter(g => g.devId === user.id)
+    if (!currentDev) return []
+    let filtered = allGigs.filter(g => g.devId === currentDev.id)
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
@@ -151,22 +190,41 @@ export default function DevDashboard() {
       )
     }
     return filtered
-  }, [allGigs, search, user])
+  }, [allGigs, search, currentDev])
 
-  const totalGigsPosted = user ? allGigs.filter(g => g.devId === user.id).length : 0
-  const totalApplicants = user
+  const totalGigsPosted = currentDev ? allGigs.filter(g => g.devId === currentDev.id).length : 0
+  const totalApplicants = currentDev
     ? allGigs
-        .filter(g => g.devId === user.id)
+        .filter(g => g.devId === currentDev.id)
         .reduce((sum, g) => sum + g.applicants, 0)
     : 0
-  const totalSpent = user
+  const totalSpent = currentDev
     ? allGigs
-        .filter(g => g.devId === user.id && (g.status === 'completed' || g.status === 'in_progress'))
+        .filter(g => g.devId === currentDev.id && (g.status === 'completed' || g.status === 'in_progress'))
         .reduce((sum, g) => sum + g.budget, 0)
     : 0
-  const avgRating = user?.rating ?? 0
+  const avgRating = currentDev?.rating ?? 0
 
-  if (isLoading) {
+  const handleCloseGig = async (gigId: string) => {
+    // Closing a gig is done via PATCH - applications/[id] with status
+    // For now, just update the status locally and via API
+    try {
+      // We use the gig's applications to find them
+      const appsRes = await getMyApplications({ gigId })
+      // Close all pending applications
+      for (const app of appsRes) {
+        if (app.status === 'pending') {
+          await updateApplicationStatus(app.id, 'rejected')
+        }
+      }
+      // Re-fetch data
+      await fetchData()
+    } catch (err) {
+      console.error('Failed to close gig:', err)
+    }
+  }
+
+  if (isLoading || fetching) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-3">
@@ -214,7 +272,7 @@ export default function DevDashboard() {
             <Link href="/streamer">
               <Button variant="ghost" size="sm">Streamer Portal</Button>
             </Link>
-            <Avatar src={user.avatar} name={user.name} size="sm" />
+            <Avatar src={currentDev.avatar || currentDev.image} name={currentDev.name} size="sm" />
           </div>
         </div>
       </header>
@@ -222,11 +280,11 @@ export default function DevDashboard() {
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-4">
-            <Avatar src={user.avatar} name={user.name} size="xl" />
+            <Avatar src={currentDev.avatar || currentDev.image} name={currentDev.name} size="xl" />
             <div>
               <h1 className="text-heading text-zinc-50">Dev Dashboard</h1>
-              <p className="text-body text-zinc-500">{user.name} &middot; @{user.handle}</p>
-              <p className="mt-1 text-small text-zinc-600 max-w-lg">{user.bio}</p>
+              <p className="text-body text-zinc-500">{currentDev.name} &middot; @{currentDev.handle}</p>
+              <p className="mt-1 text-small text-zinc-600 max-w-lg">{currentDev.bio}</p>
             </div>
           </div>
         </div>
@@ -311,7 +369,7 @@ export default function DevDashboard() {
                     key={gig.id}
                     gig={gig}
                     onView={() => router.push(`/gig/${gig.id}?dev=true`)}
-                    onClose={() => closeGig(gig.id)}
+                    onClose={() => handleCloseGig(gig.id)}
                   />
                 ))}
               </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useSyncExternalStore } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth'
@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { DataStore } from '@/lib/data'
+import { getGigs, getMyApplications } from '@/lib/api-client'
 import {
   cn,
   formatCurrency,
@@ -357,20 +357,62 @@ export default function StreamerDashboard() {
   const [sortBy, setSortBy] = useState<SortKey>('newest')
   const [showFilters, setShowFilters] = useState(false)
 
+  // API data state
+  const [allGigs, setAllGigs] = useState<Gig[]>([])
+  const [allApps, setAllApps] = useState<Application[]>([])
+  const [fetching, setFetching] = useState(true)
+  const [userData, setUserData] = useState<any>(null)
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/auth')
     }
   }, [isLoading, user, router])
 
-  const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
-  const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
+  // Fetch user data from API
+  useEffect(() => {
+    if (!user) return
+    async function load() {
+      try {
+        const { getMe } = await import('@/lib/api-client')
+        const me = await getMe()
+        setUserData(me)
+      } catch {
+        setUserData(user)
+      }
+    }
+    load()
+  }, [user])
 
-  const currentStreamer = user!
+  // Fetch gigs and applications
+  const fetchData = useCallback(async () => {
+    if (!user) return
+    setFetching(true)
+    try {
+      const [gigsRes, apps] = await Promise.all([
+        getGigs({ limit: '100' }),
+        getMyApplications(),
+      ])
+      setAllGigs(gigsRes.gigs as Gig[])
+      setAllApps(apps as Application[])
+    } catch (err) {
+      console.error('Failed to load data:', err)
+    } finally {
+      setFetching(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const currentStreamer = userData || user
+
   const streamerApps = useMemo(() => {
     if (!currentStreamer) return []
     return allApps.filter(a => a.streamerId === currentStreamer.id)
   }, [allApps, currentStreamer])
+
   const completedApps = streamerApps.filter(a => a.status === 'completed')
   const totalEarnings = completedApps.reduce((sum, app) => {
     const g = allGigs.find(g => g.id === app.gigId)
@@ -434,14 +476,14 @@ export default function StreamerDashboard() {
     if (search) {
       const q = search.toLowerCase()
       apps = apps.filter(a => {
-        const g = allGigs.find(g => g.id === a.gigId)
+        const g = allGigs.find(gg => gg.id === a.gigId)
         return g?.title.toLowerCase().includes(q) || g?.game.toLowerCase().includes(q)
       })
     }
     return apps
   }, [activeTab, search, streamerApps, allGigs])
 
-  if (isLoading) {
+  if (isLoading || fetching) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="flex flex-col items-center gap-3">
@@ -480,7 +522,7 @@ export default function StreamerDashboard() {
             <Link href="/dev">
               <Button variant="ghost" size="sm">Dev Portal</Button>
             </Link>
-            <Avatar src={currentStreamer.avatar} name={currentStreamer.name} size="sm" status="online" />
+            <Avatar src={currentStreamer.avatar || currentStreamer.image} name={currentStreamer.name} size="sm" status="online" />
           </div>
         </div>
       </header>
@@ -488,14 +530,14 @@ export default function StreamerDashboard() {
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-4">
-            <Avatar src={currentStreamer.avatar} name={currentStreamer.name} size="xl" status="online" />
+            <Avatar src={currentStreamer.avatar || currentStreamer.image} name={currentStreamer.name} size="xl" status="online" />
             <div>
               <h1 className="text-heading text-zinc-50">Hey, {currentStreamer.name}</h1>
               <p className="text-body text-zinc-500">@{currentStreamer.handle} &middot; {currentStreamer.bio}</p>
               <div className="mt-2 flex items-center gap-3 text-small text-zinc-500">
-                <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {formatNumber(currentStreamer.followers!)} followers</span>
-                <span className="flex items-center gap-1"><Star className="h-3 w-3" /> {currentStreamer.rating} avg rating</span>
-                <span className="flex items-center gap-1"><Flame className="h-3 w-3" /> {formatNumber(currentStreamer.avgViewers!)} avg viewers</span>
+                <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {formatNumber(currentStreamer.followers ?? 0)} followers</span>
+                <span className="flex items-center gap-1"><Star className="h-3 w-3" /> {currentStreamer.rating ?? 0} avg rating</span>
+                <span className="flex items-center gap-1"><Flame className="h-3 w-3" /> {formatNumber(currentStreamer.avgViewers ?? 0)} avg viewers</span>
               </div>
             </div>
           </div>
@@ -507,7 +549,7 @@ export default function StreamerDashboard() {
               <CheckCircle2 className="h-4 w-4" />
               <span className="text-small text-zinc-500">Completed</span>
             </div>
-            <p className="mt-1 text-heading text-zinc-50">{currentStreamer.totalGigsCompleted}</p>
+            <p className="mt-1 text-heading text-zinc-50">{currentStreamer.totalGigsCompleted ?? 0}</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-brand">
@@ -521,7 +563,7 @@ export default function StreamerDashboard() {
               <Star className="h-4 w-4" />
               <span className="text-small text-zinc-500">Rating</span>
             </div>
-            <p className="mt-1 text-heading text-zinc-50">{currentStreamer.rating}</p>
+            <p className="mt-1 text-heading text-zinc-50">{currentStreamer.rating ?? 0}</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-cyan">
@@ -533,7 +575,23 @@ export default function StreamerDashboard() {
         </div>
 
         <div className="mb-8">
-          <VibeScore score={currentStreamer.vibeScore} />
+          <VibeScore score={currentStreamer.vibeScore ?? 0} />
+        </div>
+
+        {/* Stripe Connect onboarding hint */}
+        <div className="mb-8">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 text-yellow mb-2">
+              <DollarSign className="h-4 w-4" />
+              <span className="text-label text-zinc-400">Get Paid</span>
+            </div>
+            <p className="text-small text-zinc-500 mb-3">
+              Connect Stripe to receive payments for completed gigs.
+            </p>
+            <Button size="sm" variant="secondary" className="w-full gap-1.5 text-small" disabled>
+              <DollarSign className="h-3.5 w-3.5" /> Connect Stripe (Coming Soon)
+            </Button>
+          </Card>
         </div>
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

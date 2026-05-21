@@ -8,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Input, Textarea, Select } from '@/components/ui/input'
-import { DataStore, addGig } from '@/lib/data'
-import { Gig } from '@/lib/types'
+import { createGig } from '@/lib/api-client'
 import {
   formatCurrency,
   getGameIcon,
@@ -97,6 +96,7 @@ export default function PostGigPage() {
   const [errors, setErrors] = useState<FormErrors>({})
   const [tagInput, setTagInput] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !currentDev) {
@@ -143,33 +143,33 @@ export default function PostGigPage() {
     return Object.keys(errs).length === 0
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!currentDev) return
-    if (validate()) {
+    if (!validate()) return
+
+    setSubmitting(true)
+    try {
       const newGig = {
-        id: `g${Date.now()}`,
-        devId: currentDev.id,
-        devName: currentDev.name,
-        devAvatar: currentDev.avatar,
         title: form.title.trim(),
         description: form.description.trim(),
         game: form.game.trim(),
-        gameType: form.gameType as Gig['gameType'],
-        platform: form.platform as Gig['platform'],
+        gameType: form.gameType,
+        platform: form.platform,
         budget: Number(form.budget),
-        payoutType: form.payoutType as Gig['payoutType'],
-        minFollowers: form.minFollowers ? Number(form.minFollowers) : undefined,
-        minAvgViewers: form.minAvgViewers ? Number(form.minAvgViewers) : undefined,
+        payoutType: form.payoutType,
+        minFollowers: form.minFollowers ? Number(form.minFollowers) : null,
+        minAvgViewers: form.minAvgViewers ? Number(form.minAvgViewers) : null,
         duration: form.duration.trim(),
         scheduledDate: new Date(form.scheduledDate).toISOString(),
-        status: 'open' as const,
         tags: form.tags,
-        applicants: 0,
-        createdAt: new Date().toISOString(),
       }
-      addGig(newGig)
+      await createGig(newGig)
       setSubmitted(true)
       router.push('/dev')
+    } catch (err: any) {
+      setErrors({ submit: err.message || 'Failed to create gig' })
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -457,7 +457,7 @@ export default function PostGigPage() {
                   </CardContent>
                 </Card>
 
-                <Button size="lg" className="w-full gap-2" onClick={handleSubmit}>
+                <Button size="lg" className="w-full gap-2" onClick={handleSubmit} disabled={submitting}>
                   <Send className="h-5 w-5" /> Post Gig
                 </Button>
               </div>
@@ -491,7 +491,7 @@ export default function PostGigPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Avatar src={currentDev.avatar} name={currentDev.name} size="sm" />
+                        <Avatar src={currentDev.image || undefined} name={currentDev.name || ''} size="sm" />
                         <span className="text-small text-zinc-400">Posted by {currentDev.name}</span>
                       </div>
 

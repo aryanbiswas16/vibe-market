@@ -1,7 +1,7 @@
-'use client'
+"use client"
 
-import { AuthProvider } from '@/lib/auth'
-import { ToastProvider } from '@/lib/toast'
+import { AuthProvider } from "@/lib/auth"
+import { ToastProvider } from "@/lib/toast"
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (

@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useMemo, useSyncExternalStore } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
-import { DataStore, streamers } from '@/lib/data'
+import { streamers } from '@/lib/data'
+import { getGigs, getMyApplications } from '@/lib/api-client'
 import {
   cn,
   formatCurrency,
@@ -28,7 +29,7 @@ import {
   ArrowLeft,
   ExternalLink,
 } from 'lucide-react'
-import type { Gig } from '@/lib/types'
+import type { Gig, Application } from '@/lib/types'
 
 function VibeScore({ score }: { score: number }) {
   const level = score >= 90 ? 'Legendary' : score >= 80 ? 'Elite' : score >= 70 ? 'Pro' : 'Rising'
@@ -125,10 +126,43 @@ export default function StreamerProfilePage() {
   const params = useParams()
   const id = params?.id as string
 
-  const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
-  const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
+  const [allGigs, setAllGigs] = useState<Gig[]>([])
+  const [allApps, setAllApps] = useState<Application[]>([])
+  const [streamerData, setStreamerData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const streamer = useMemo(() => streamers.find(s => s.id === id), [id])
+  useEffect(() => {
+    async function load() {
+      try {
+        const [gigsRes, apps] = await Promise.all([
+          getGigs({ limit: '100' }),
+          getMyApplications(),
+        ])
+        const fetchedGigs = gigsRes.gigs as Gig[]
+        const fetchedApps = apps as Application[]
+        setAllGigs(fetchedGigs)
+        setAllApps(fetchedApps)
+
+        // Find streamer data from the application streamer info
+        const streamerApp = fetchedApps.find(a => a.streamerId === id)
+        if (streamerApp) {
+          setStreamerData({
+            id: streamerApp.streamerId,
+            name: streamerApp.streamerName,
+            avatar: streamerApp.streamerAvatar,
+            followers: streamerApp.streamerFollowers,
+            avgViewers: streamerApp.streamerAvgViewers,
+            vibeScore: (streamerApp as any).streamerVibeScore ?? 50,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to load profile data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [id])
 
   const completedApps = useMemo(
     () => allApps.filter(a => a.streamerId === id && a.status === 'completed'),
@@ -145,9 +179,12 @@ export default function StreamerProfilePage() {
     [completedGigs],
   )
 
-  if (!streamer && !streamers.length) {
+  if (loading && !streamerData) {
     return <ProfileSkeleton />
   }
+
+  // Default streamer info from mock data if needed
+  const streamer = streamerData || streamers.find((s: any) => s.id === id)
 
   if (!streamer) {
     return (
@@ -194,11 +231,11 @@ export default function StreamerProfilePage() {
                   <div className="mt-4 flex flex-wrap items-center gap-4 text-small text-zinc-500">
                     <span className="flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-zinc-600" />
-                      Joined {new Date(streamer.joinedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      Joined {new Date(streamer.joinedAt || streamer.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <CheckCircle2 className="h-3.5 w-3.5 text-green" />
-                      {streamer.totalGigsCompleted} gigs completed
+                      {streamer.totalGigsCompleted ?? 0} gigs completed
                     </span>
                   </div>
                 </div>
@@ -239,7 +276,7 @@ export default function StreamerProfilePage() {
             </Card>
             <Card className="p-4">
               <Star className="mb-2 h-4 w-4 text-yellow" />
-              <p className="text-heading text-zinc-50">{streamer.rating}</p>
+              <p className="text-heading text-zinc-50">{streamer.rating ?? 0}</p>
               <p className="text-small text-zinc-500">Rating</p>
             </Card>
             <Card className="p-4">
@@ -251,7 +288,7 @@ export default function StreamerProfilePage() {
         </section>
 
         <section aria-label="Vibe score">
-          <VibeScore score={streamer.vibeScore} />
+          <VibeScore score={streamer.vibeScore ?? 0} />
         </section>
 
         <section aria-label="Completed gigs">

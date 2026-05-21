@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useSyncExternalStore } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/input'
-import { DataStore, addApplication, updateApplicationStatus } from '@/lib/data'
+import { getGig, createApplication, updateApplicationStatus, getMyApplications, getGigPayment, createPaymentIntent, confirmPayment, releasePayment } from '@/lib/api-client'
 import {
   cn,
   formatCurrency,
@@ -49,17 +49,20 @@ function ApplyForm({
   gig,
   onClose,
   user,
+  onApplied,
 }: {
   gigId: string
   gig: Gig
   onClose: () => void
   user: NonNullable<ReturnType<typeof useAuth>['user']>
+  onApplied: () => void
 }) {
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!message.trim()) {
       setError('Please write a message to the dev')
       return
@@ -68,26 +71,17 @@ function ApplyForm({
       setError('Message must be at least 20 characters')
       return
     }
-    const now = new Date().toISOString()
-    const newApp = {
-      id: `app-${Date.now()}`,
-      gigId,
-      streamerId: user.id,
-      streamerName: user.name,
-      streamerAvatar: user.avatar,
-      streamerFollowers: user.followers ?? 0,
-      streamerAvgViewers: user.avgViewers ?? 0,
-      message: message.trim(),
-      status: 'pending' as const,
-      appliedAt: now,
+    setLoading(true)
+    try {
+      await createApplication({ gigId, message: message.trim() })
+      setSubmitted(true)
+      setError('')
+      onApplied()
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit application')
+    } finally {
+      setLoading(false)
     }
-    addApplication(newApp)
-    const gigs = DataStore.getGigs()
-    const g = gigs.find(g => g.id === gigId)
-    if (g) g.applicants++
-    DataStore.notify()
-    setSubmitted(true)
-    setError('')
   }
 
   if (submitted) {
@@ -134,7 +128,7 @@ function ApplyForm({
           {error && <p className="text-small text-red-500">{error}</p>}
         </div>
         <div className="flex gap-3">
-          <Button onClick={handleSubmit} className="flex-1 gap-2">
+          <Button onClick={handleSubmit} className="flex-1 gap-2" disabled={loading}>
             <Send className="h-4 w-4" /> Send Application
           </Button>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -147,9 +141,23 @@ function ApplyForm({
 function ApplicantsSection({
   apps,
   isDevView,
+  gigStatus,
+  gigBudget,
+  payment,
+  paymentLoading,
+  onProcessPayment,
+  onReleasePayment,
+  onStatusChange,
 }: {
   apps: Application[]
   isDevView: boolean
+  gigStatus?: string
+  gigBudget?: number
+  payment?: any | null
+  paymentLoading?: boolean
+  onProcessPayment?: (applicationId: string) => void
+  onReleasePayment?: () => void
+  onStatusChange?: () => void
 }) {
   if (apps.length === 0) return null
 
@@ -169,97 +177,136 @@ function ApplicantsSection({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {apps.map(app => {
-          const streamer = DataStore.getStreamers().find(s => s.id === app.streamerId)
-          return (
-            <div
-              key={app.id}
-              className="rounded-lg surface-1 p-4 transition-colors hover:surface-2"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar src={app.streamerAvatar} name={app.streamerName} size="md" status={
-                    app.status === 'accepted' ? 'online' :
-                    app.status === 'rejected' ? 'offline' : 'away'
-                  } />
-                  <div className="min-w-0">
-                    <p className="text-caption font-semibold text-zinc-50 truncate">{app.streamerName}</p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-small text-zinc-500">
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {formatNumber(app.streamerFollowers)} followers
-                      </span>
-                      <span className="text-zinc-700">&middot;</span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        {formatNumber(app.streamerAvgViewers)} avg viewers
-                      </span>
-                      {streamer && (
-                        <>
-                          <span className="text-zinc-700">&middot;</span>
-                          <span className="flex items-center gap-1">
-                            <Star className="h-3 w-3" />
-                            Vibe {streamer.vibeScore}
-                          </span>
-                        </>
-                      )}
-                    </div>
+        {apps.map(app => (
+          <div
+            key={app.id}
+            className="rounded-lg surface-1 p-4 transition-colors hover:surface-2"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar src={app.streamerAvatar} name={app.streamerName} size="md" status={
+                  app.status === 'accepted' ? 'online' :
+                  app.status === 'rejected' ? 'offline' : 'away'
+                } />
+                <div className="min-w-0">
+                  <p className="text-caption font-semibold text-zinc-50 truncate">{app.streamerName}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-small text-zinc-500">
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {formatNumber(app.streamerFollowers)} followers
+                    </span>
+                    <span className="text-zinc-700">&middot;</span>
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      {formatNumber(app.streamerAvgViewers)} avg viewers
+                    </span>
+                    <span className="text-zinc-700">&middot;</span>
+                    <span className="flex items-center gap-1">
+                      <Star className="h-3 w-3" />
+                      Vibe {(app as any).streamerVibeScore ?? 0}
+                    </span>
                   </div>
                 </div>
-                <Badge
-                  variant={
-                    app.status === 'accepted' ? 'green' :
-                    app.status === 'rejected' ? 'default' :
-                    app.status === 'completed' ? 'yellow' :
-                    'primary'
-                  }
-                  size="sm"
-                  dot
-                >
-                  {app.status}
-                </Badge>
               </div>
-
-              <div className="mt-3 rounded-lg surface-1 p-3">
-                <p className="text-small text-zinc-400 leading-relaxed">&ldquo;{app.message}&rdquo;</p>
-              </div>
-
-              {isDevView && app.status === 'pending' && (
-                <div className="mt-3 flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    className="gap-1.5 text-small"
-                    onClick={() => updateApplicationStatus(app.id, 'accepted')}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Accept
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="gap-1.5 text-small text-red-400 hover:text-red-300"
-                    onClick={() => updateApplicationStatus(app.id, 'rejected')}
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                    Reject
-                  </Button>
-                  <span className="text-small text-zinc-600 ml-auto">
-                    Applied {timeAgo(app.appliedAt)}
-                  </span>
-                </div>
-              )}
-
-              {!isDevView && (
-                <div className="mt-2 text-right">
-                  <span className="text-small text-zinc-600">
-                    Applied {timeAgo(app.appliedAt)}
-                  </span>
-                </div>
-              )}
+              <Badge
+                variant={
+                  app.status === 'accepted' ? 'green' :
+                  app.status === 'rejected' ? 'default' :
+                  app.status === 'completed' ? 'yellow' :
+                  'primary'
+                }
+                size="sm"
+                dot
+              >
+                {app.status}
+              </Badge>
             </div>
-          )
-        })}
+
+            <div className="mt-3 rounded-lg surface-1 p-3">
+              <p className="text-small text-zinc-400 leading-relaxed">&ldquo;{app.message}&rdquo;</p>
+            </div>
+
+            {isDevView && app.status === 'pending' && (
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  className="gap-1.5 text-small"
+                  onClick={async () => {
+                    try {
+                      await updateApplicationStatus(app.id, 'accepted')
+                      onStatusChange?.()
+                    } catch (err) {
+                      console.error('Failed to accept:', err)
+                    }
+                  }}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1.5 text-small text-red-400 hover:text-red-300"
+                  onClick={async () => {
+                    try {
+                      await updateApplicationStatus(app.id, 'rejected')
+                      onStatusChange?.()
+                    } catch (err) {
+                      console.error('Failed to reject:', err)
+                    }
+                  }}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  Reject
+                </Button>
+                <span className="text-small text-zinc-600 ml-auto">
+                  Applied {timeAgo(app.appliedAt)}
+                </span>
+              </div>
+            )}
+
+            {isDevView && app.status === 'accepted' && payment && (
+              <div className="mt-3 space-y-2">
+                {payment.status === 'succeeded' && gigStatus === 'in_progress' && (
+                  <Button size="sm" variant="primary" className="gap-1.5 w-full" onClick={onReleasePayment} disabled={paymentLoading}>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {paymentLoading ? 'Processing...' : 'Mark Complete & Release Payment'}
+                  </Button>
+                )}
+                {payment.status === 'released' && (
+                  <div className="rounded-lg surface-2 p-3 text-center">
+                    <Badge variant="green" size="md">Payment Released ✓</Badge>
+                    <p className="text-small text-zinc-500 mt-1">Funds transferred to streamer</p>
+                  </div>
+                )}
+                {(payment.status === 'requires_payment_method' || payment.status === 'requires_action' || payment.status === 'requires_confirmation') && (
+                  <Button size="sm" variant="primary" className="gap-1.5 w-full" onClick={() => onProcessPayment?.(app.id)} disabled={paymentLoading}>
+                    <DollarSign className="h-3.5 w-3.5" />
+                    {paymentLoading ? 'Completing Payment...' : 'Complete Payment'}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {isDevView && app.status === 'accepted' && !payment && (
+              <div className="mt-3">
+                <Button size="sm" variant="primary" className="gap-1.5 w-full" onClick={() => onProcessPayment?.(app.id)} disabled={paymentLoading}>
+                  <DollarSign className="h-3.5 w-3.5" />
+                  {paymentLoading ? 'Processing Payment...' : `Process Payment (${gigBudget ? formatCurrency(gigBudget) : '$0'})`}
+                </Button>
+              </div>
+            )}
+
+            {!isDevView && (
+              <div className="mt-2 text-right">
+                <span className="text-small text-zinc-600">
+                  Applied {timeAgo(app.appliedAt)}
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
       </CardContent>
     </Card>
   )
@@ -271,26 +318,94 @@ export default function GigDetailPage() {
   const gigId = params?.id as string
   const { user } = useAuth()
 
-  const allGigs = useSyncExternalStore(DataStore.subscribe, DataStore.getGigs, DataStore.getServerSnapshot)
-  const allApps = useSyncExternalStore(DataStore.subscribe, DataStore.getApplications, DataStore.getAppServerSnapshot)
-
-  const gig = useMemo(() => allGigs.find(g => g.id === gigId), [allGigs, gigId])
-  const gigApps = useMemo(() => allApps.filter(a => a.gigId === gigId), [allApps, gigId])
+  const [gig, setGig] = useState<Gig | null>(null)
+  const [gigApps, setGigApps] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
   const [showApplyForm, setShowApplyForm] = useState(false)
-const [isDevView, setIsDevView] = useState(() => {
+  const [isDevView, setIsDevView] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [payment, setPayment] = useState<any>(null)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return new URLSearchParams(window.location.search).get('dev') === 'true'
+      setIsDevView(new URLSearchParams(window.location.search).get('dev') === 'true')
     }
-    return false
-  })
+  }, [])
+
+  const fetchGig = useCallback(async () => {
+    if (!gigId) return
+    setLoading(true)
+    try {
+      const data = await getGig(gigId)
+      setGig(data.gig as Gig)
+      setGigApps(data.applications as Application[])
+    } catch (err) {
+      console.error('Failed to load gig:', err)
+      setGig(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [gigId])
+
+  useEffect(() => {
+    fetchGig()
+  }, [fetchGig, refreshKey])
+
+  // Fetch payment status when viewing as dev
+  useEffect(() => {
+    if (gigId && isDevView) {
+      getGigPayment(gigId).then(r => setPayment(r.payment)).catch(() => {})
+    }
+  }, [gigId, isDevView])
+
+  // Payment handlers
+  const handleProcessPayment = useCallback(async (applicationId: string) => {
+    if (!gigId) return
+    setPaymentLoading(true)
+    try {
+      const result = await createPaymentIntent({ gigId, applicationId })
+      if (result.clientSecret) {
+        const piId = result.clientSecret.split('_secret')[0]
+        await confirmPayment({ paymentIntentId: piId })
+        const updated = await getGigPayment(gigId)
+        setPayment(updated.payment)
+        // Wait a beat for webhook to process
+        setTimeout(async () => {
+          const refreshed = await getGigPayment(gigId)
+          setPayment(refreshed.payment)
+        }, 2000)
+      }
+    } catch (err: any) {
+      console.error(err)
+    }
+    setPaymentLoading(false)
+  }, [gigId])
+
+  const handleReleasePayment = useCallback(async () => {
+    if (!gigId) return
+    setPaymentLoading(true)
+    try {
+      await releasePayment({ gigId })
+      const updated = await getGigPayment(gigId)
+      setPayment(updated.payment)
+      // Reload page data
+      const reload = await getGig(gigId)
+      setGig(reload.gig as Gig)
+      setGigApps(reload.applications as Application[])
+    } catch (err: any) {
+      console.error(err)
+    }
+    setPaymentLoading(false)
+  }, [gigId])
 
   const hasApplied = useMemo(
-    () => user ? allApps.some(a => a.gigId === gigId && a.streamerId === user.id) : false,
-    [allApps, gigId, user],
+    () => user ? gigApps.some(a => a.streamerId === user.id) : false,
+    [gigApps, user],
   )
   const existingApp = useMemo(
-    () => user ? allApps.find(a => a.gigId === gigId && a.streamerId === user.id) : undefined,
-    [allApps, gigId, user],
+    () => user ? gigApps.find(a => a.streamerId === user.id) : undefined,
+    [gigApps, user],
   )
 
   const handleApplyClick = () => {
@@ -299,6 +414,17 @@ const [isDevView, setIsDevView] = useState(() => {
       return
     }
     setShowApplyForm(true)
+  }
+
+  const refreshData = () => setRefreshKey(k => k + 1)
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-black gap-6 px-6">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+        <p className="text-body text-zinc-500">Loading gig...</p>
+      </div>
+    )
   }
 
   if (!gig) {
@@ -324,9 +450,9 @@ const [isDevView, setIsDevView] = useState(() => {
     <div className="min-h-screen bg-black">
       <header className="shadow-divider sticky top-0 z-50 bg-black">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link href="/streamer" className="flex items-center gap-2 text-body text-zinc-400 hover:text-zinc-100 transition-colors">
+          <Link href={isDevView ? '/dev' : '/streamer'} className="flex items-center gap-2 text-body text-zinc-400 hover:text-zinc-100 transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            Back to Gigs
+            {isDevView ? 'Back to Dashboard' : 'Back to Gigs'}
           </Link>
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-brand" />
@@ -339,7 +465,7 @@ const [isDevView, setIsDevView] = useState(() => {
         <div className="mx-auto max-w-4xl px-6 py-16">
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 text-small text-zinc-600">
-              <Link href="/streamer" className="hover:text-zinc-400">Gigs</Link>
+              <Link href={isDevView ? '/dev' : '/streamer'} className="hover:text-zinc-400">{isDevView ? 'Dashboard' : 'Gigs'}</Link>
               <ChevronRight className="h-3 w-3" />
               <span className="text-zinc-400">{gig.game}</span>
             </div>
@@ -456,7 +582,7 @@ const [isDevView, setIsDevView] = useState(() => {
             </div>
 
             {showApplyForm && user ? (
-              <ApplyForm gigId={gig.id} gig={gig} onClose={() => setShowApplyForm(false)} user={user} />
+              <ApplyForm gigId={gig.id} gig={gig} onClose={() => setShowApplyForm(false)} user={user} onApplied={refreshData} />
             ) : (
               gig.status === 'open' && !hasApplied && (
                 <Button size="lg" className="w-full gap-2" onClick={handleApplyClick}>
@@ -560,7 +686,7 @@ const [isDevView, setIsDevView] = useState(() => {
         </div>
 
         <div className="mt-12">
-          <ApplicantsSection apps={gigApps} isDevView={isDevView} />
+          <ApplicantsSection apps={gigApps} isDevView={isDevView} gigStatus={gig.status} gigBudget={gig.budget} payment={payment} paymentLoading={paymentLoading} onProcessPayment={handleProcessPayment} onReleasePayment={handleReleasePayment} onStatusChange={refreshData} />
         </div>
       </div>
     </div>
