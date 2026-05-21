@@ -5,16 +5,18 @@ import { cn } from '@/lib/utils'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   hover?: boolean
+  glass?: boolean
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, hover, children, ...props }, ref) => {
+  ({ className, hover, glass, children, ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={cn(
-          'rounded-xl surface-2 transition-all duration-200',
-          hover && 'cursor-pointer hover:surface-3',
+          'rounded-xl surface-1 shadow-card transition-all duration-200',
+          hover && 'cursor-pointer hover:surface-2 hover:shadow-card-hover',
+          glass && 'bg-white/[0.02] backdrop-blur-xl',
           className,
         )}
         {...props}

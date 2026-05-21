@@ -9,13 +9,15 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-zinc-800 text-zinc-300',
-        primary: 'text-brand bg-brand/10',
-        green: 'text-green bg-green/10',
-        cyan: 'text-cyan bg-cyan/10',
-        pink: 'text-pink bg-pink/10',
-        yellow: 'text-yellow bg-yellow/10',
-        outline: 'bg-transparent text-zinc-400 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]',
+        default:
+          'bg-transparent text-zinc-400 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
+        primary: 'bg-brand/10 text-brand',
+        green: 'bg-green/10 text-green',
+        cyan: 'bg-cyan/10 text-cyan',
+        pink: 'bg-pink/10 text-pink',
+        yellow: 'bg-yellow/10 text-yellow',
+        outline:
+          'bg-transparent text-zinc-400 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
       },
       size: {
         sm: 'px-2 py-0.5 text-[11px]',
@@ -53,7 +55,7 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
               variant === 'cyan' && 'bg-cyan',
               variant === 'pink' && 'bg-pink',
               variant === 'yellow' && 'bg-yellow',
-              (!variant || variant === 'default') && 'bg-zinc-400',
+              (!variant || variant === 'default' || variant === 'outline') && 'bg-zinc-400',
             )}
           />
         )}

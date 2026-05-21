@@ -14,7 +14,9 @@
   --color-zinc-500: #71717a;
   --color-zinc-600: #52525b;
   --color-zinc-700: #3f3f46;
+  --color-zinc-750: #242428;
   --color-zinc-800: #27272a;
+  --color-zinc-850: #1a1a1d;
   --color-zinc-900: #18181b;
   --color-zinc-950: #09090b;
 
@@ -26,11 +28,11 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
-  --radius-xl: 0.5rem;
-  --radius-2xl: 0.75rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
 }
 
 * {
@@ -44,42 +46,80 @@ html {
 }
 
 body {
-  background-color: #000000;
+  background-color: #08090a;
   color: #f4f4f5;
   font-family: var(--font-sans);
   min-height: 100vh;
 }
 
 @layer utilities {
+  /* ──────────── Multi-layer shadows ──────────── */
+
   .shadow-border {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
   .shadow-border-hover {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
   }
   .shadow-border-active {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
   }
   .shadow-divider {
     box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04);
   }
 
+  .shadow-card {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 1px 2px rgba(0, 0, 0, 0.1),
+      0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  .shadow-card-hover {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.12),
+      0 8px 16px rgba(0, 0, 0, 0.12);
+  }
+  .shadow-elevated {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 4px 12px rgba(0, 0, 0, 0.15),
+      0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ──────────── Surface tints ──────────── */
+
+  .surface-1 {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+  .surface-2 {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+  .surface-3 {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+  .surface-4 {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ──────────── Typography with letter-spacing ──────────── */
+
   .text-display-xl {
     font-size: 48px;
     font-weight: 600;
-    letter-spacing: 0;
+    letter-spacing: -0.03em;
     line-height: 1;
   }
   .text-display {
     font-size: 36px;
     font-weight: 600;
-    letter-spacing: 0;
+    letter-spacing: -0.02em;
     line-height: 1.1;
   }
   .text-heading {
     font-size: 24px;
     font-weight: 600;
-    letter-spacing: 0;
+    letter-spacing: -0.01em;
     line-height: 1.25;
   }
   .text-subheading {
@@ -91,16 +131,19 @@ body {
   .text-body {
     font-size: 15px;
     font-weight: 400;
+    letter-spacing: 0.01em;
     line-height: 1.6;
   }
   .text-caption {
     font-size: 13px;
     font-weight: 500;
+    letter-spacing: 0.02em;
     line-height: 1.4;
   }
   .text-small {
     font-size: 12px;
     font-weight: 400;
+    letter-spacing: 0.02em;
     line-height: 1.4;
   }
   .text-label {
@@ -115,23 +158,7 @@ body {
     font-weight: 400;
   }
 
-  .surface-1 {
-    background-color: #09090b;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
-  }
-  .surface-2 {
-    background-color: #18181b;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
-  }
-  .surface-3 {
-    background-color: #27272a;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
-  }
-  .surface-1:hover,
-  .surface-2:hover,
-  .surface-3:hover {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
-  }
+  /* ──────────── Brand gradient ──────────── */
 
   .text-gradient-brand {
     background: linear-gradient(135deg, #FF4500, #FF6A33);
@@ -140,6 +167,8 @@ body {
     background-clip: text;
   }
 
+  /* ──────────── Background grid ──────────── */
+
   .bg-grid {
     background-image:
       linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
@@ -147,12 +176,14 @@ body {
     background-size: 64px 64px;
   }
 
+  /* ──────────── Shimmer ──────────── */
+
   .shimmer {
     background: linear-gradient(
       90deg,
-      #09090b 25%,
-      #18181b 50%,
-      #09090b 75%
+      rgba(255, 255, 255, 0.02) 25%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.02) 75%
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
@@ -162,6 +193,8 @@ body {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
+
+  /* ──────────── Animations ──────────── */
 
   .animate-in {
     animation: animateIn 0.2s ease-out;
@@ -188,11 +221,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 ::selection {
@@ -201,6 +234,8 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(255, 69, 0, 0.5);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(255, 69, 0, 0.5),
+    0 0 0 4px rgba(255, 69, 0, 0.15);
 }
